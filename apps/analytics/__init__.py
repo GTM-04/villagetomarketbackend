@@ -1,0 +1,5 @@
+"""
+Analytics app - Reporting and insights.
+"""
+
+default_app_config = 'apps.analytics.apps.AnalyticsConfig'

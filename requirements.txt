@@ -1,0 +1,90 @@
+# Core Frameworks
+django==5.0.3
+fastapi==0.110.0
+uvicorn[standard]==0.27.1
+pydantic==2.6.3
+pydantic-settings==2.2.1
+
+# Database & ORM
+psycopg2-binary==2.9.9
+sqlalchemy==2.0.27
+alembic==1.13.1
+databases==0.8.0
+
+# Authentication & Security
+djangorestframework==3.14.0
+djangorestframework-simplejwt==5.3.1
+python-jose[cryptography]==3.3.0
+passlib[bcrypt]==1.7.4
+python-multipart==0.0.9
+pyjwt==2.8.0
+
+# API & Serialization
+pydantic==2.6.3
+orjson==3.9.15
+marshmallow==3.21.1
+
+# Background Tasks & Async
+celery==5.3.6
+redis==5.0.1
+aioredis==2.0.1
+flower==2.0.1
+
+# File Storage & Media
+pillow==10.2.0
+python-magic==0.4.27
+boto3==1.34.51
+
+# Geospatial
+geopy==2.4.1
+
+# Search
+elasticsearch==8.12.1
+elasticsearch-dsl==8.12.0
+
+# WebSockets
+websockets==12.0
+channels==4.0.0
+channels-redis==4.2.0
+
+# SMS & Notifications
+twilio==9.0.3
+
+# Monitoring & Logging
+sentry-sdk==1.40.6
+loguru==0.7.2
+prometheus-client==0.20.0
+
+# Testing
+pytest==8.0.2
+pytest-asyncio==0.23.5
+pytest-django==4.8.0
+pytest-cov==4.1.0
+factory-boy==3.3.0
+faker==24.0.0
+httpx==0.27.0
+
+# Development Tools
+black==24.2.0
+flake8==7.0.0
+mypy==1.8.0
+pre-commit==3.6.2
+ipython==8.21.0
+
+# CORS & Middleware
+django-cors-headers==4.3.1
+fastapi-limiter==0.1.5
+
+# Environment
+python-dotenv==1.0.1
+
+# Data Validation & Processing
+phonenumbers==8.13.31
+python-dateutil==2.9.0
+
+# Caching
+django-redis==5.4.0
+
+# ASGI Server
+gunicorn==21.2.0
+daphne==4.1.0
