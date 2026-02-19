@@ -3,6 +3,7 @@
 ## ⚡ Get Running in 5 Minutes
 
 ### Prerequisites Check
+
 ```bash
 python --version    # Need 3.9+
 psql --version     # Need PostgreSQL 15+
@@ -61,6 +62,7 @@ docker-compose up --build
 ## Option 3: Manual Setup
 
 ### Step 1: Environment Setup
+
 ```bash
 # Create virtual environment
 python -m venv venv
@@ -75,6 +77,7 @@ pip install -r requirements.txt
 ```
 
 ### Step 2: Database Setup
+
 ```bash
 # Create PostgreSQL database
 createdb villagetomarket
@@ -86,6 +89,7 @@ CREATE DATABASE villagetomarket;
 ```
 
 ### Step 3: Configuration
+
 ```bash
 # Copy environment file
 cp .env.example .env
@@ -95,6 +99,7 @@ nano .env  # or use your editor
 ```
 
 Minimum .env settings:
+
 ```env
 DEBUG=True
 SECRET_KEY=your-secret-key-here
@@ -103,6 +108,7 @@ REDIS_URL=redis://localhost:6379/0
 ```
 
 ### Step 4: Initialize Database
+
 ```bash
 # Run migrations
 python manage.py migrate
@@ -115,6 +121,7 @@ python manage.py seed_data
 ```
 
 ### Step 5: Start Services
+
 ```bash
 # Start Django (Terminal 1)
 python manage.py runserver
@@ -134,18 +141,21 @@ redis-server
 ## 🎯 Verify Installation
 
 ### Check Django Admin
+
 ```bash
 # Open browser: http://localhost:8000/admin
 # Login with superuser credentials
 ```
 
 ### Check API Documentation
+
 ```bash
 # Open browser: http://localhost:8001/api/docs
 # Interactive API docs (Swagger UI)
 ```
 
 ### Test API Health
+
 ```bash
 curl http://localhost:8001/health
 
@@ -154,6 +164,7 @@ curl http://localhost:8001/health
 ```
 
 ### Test Authentication
+
 ```bash
 # Login with demo farmer account
 curl -X POST http://localhost:8001/api/v1/auth/login \
@@ -165,6 +176,7 @@ curl -X POST http://localhost:8001/api/v1/auth/login \
 ```
 
 ### Test Listing Creation
+
 ```bash
 # First, login and get token (from previous step)
 TOKEN="your-access-token-here"
@@ -190,12 +202,14 @@ curl -X POST http://localhost:8001/api/v1/listings/ \
 After running `python manage.py seed_data`:
 
 **Farmer Account:**
+
 - Phone: `+263771234567`
 - Password: `password123`
 - Name: Tendai Moyo
 - Farm: Moyo Family Farm
 
 **Buyer Account:**
+
 - Phone: `+263772345678`
 - Password: `password123`
 - Name: Rudo Ncube
@@ -206,6 +220,7 @@ After running `python manage.py seed_data`:
 ## 🔍 Troubleshooting
 
 ### Port Already in Use
+
 ```bash
 # Find and kill process on port 8000
 lsof -ti:8000 | xargs kill -9
@@ -215,6 +230,7 @@ python manage.py runserver 8002
 ```
 
 ### Database Connection Error
+
 ```bash
 # Check PostgreSQL is running
 sudo systemctl status postgresql
@@ -224,6 +240,7 @@ psql -U postgres -d villagetomarket -c "SELECT 1"
 ```
 
 ### Redis Connection Error
+
 ```bash
 # Check Redis is running
 redis-cli ping  # Should return PONG
@@ -233,6 +250,7 @@ redis-server
 ```
 
 ### Import Errors
+
 ```bash
 # Reinstall dependencies
 pip install -r requirements.txt
@@ -242,6 +260,7 @@ which python  # Should point to venv/bin/python
 ```
 
 ### Migration Errors
+
 ```bash
 # Reset migrations (development only!)
 python manage.py migrate --run-syncdb
@@ -257,22 +276,26 @@ python manage.py migrate
 ## 🎓 Next Steps
 
 ### 1. Explore Django Admin
-- Visit: http://localhost:8000/admin
+
+- Visit: <http://localhost:8000/admin>
 - Create users, listings, categories
 - Explore all models
 
 ### 2. Test API Endpoints
-- Visit: http://localhost:8001/api/docs
+
+- Visit: <http://localhost:8001/api/docs>
 - Use "Try it out" on each endpoint
 - Test with demo accounts
 
 ### 3. Read Documentation
+
 - `README.md` - Complete overview
 - `docs/API.md` - API documentation  
 - `docs/DEPLOYMENT.md` - Production guide
 - `PROJECT_COMPLETE.md` - Full feature list
 
 ### 4. Start Developing
+
 - Create new endpoints in `api/v1/endpoints/`
 - Add models in `apps/*/models.py`
 - Add background tasks in `apps/*/tasks.py`
@@ -282,6 +305,7 @@ python manage.py migrate
 ## 📊 Useful Commands
 
 ### Django
+
 ```bash
 # Create migrations
 python manage.py makemigrations
@@ -300,6 +324,7 @@ python manage.py collectstatic
 ```
 
 ### Celery
+
 ```bash
 # Worker
 celery -A config worker -l info
@@ -312,6 +337,7 @@ celery -A config flower  # Install: pip install flower
 ```
 
 ### Database
+
 ```bash
 # Backup
 pg_dump villagetomarket > backup.sql
@@ -324,6 +350,7 @@ dropdb villagetomarket && createdb villagetomarket
 ```
 
 ### Docker
+
 ```bash
 # Build and start
 docker-compose up --build
@@ -342,11 +369,11 @@ docker-compose exec web python manage.py migrate
 
 ## 🌐 Important URLs
 
-- **Django Admin**: http://localhost:8000/admin
-- **API Docs (Swagger)**: http://localhost:8001/api/docs
-- **API ReDoc**: http://localhost:8001/api/redoc
-- **API Health**: http://localhost:8001/health
-- **Flower (Celery Monitor)**: http://localhost:5555 (if installed)
+- **Django Admin**: <http://localhost:8000/admin>
+- **API Docs (Swagger)**: <http://localhost:8001/api/docs>
+- **API ReDoc**: <http://localhost:8001/api/redoc>
+- **API Health**: <http://localhost:8001/health>
+- **Flower (Celery Monitor)**: <http://localhost:5555> (if installed)
 
 ---
 
@@ -380,6 +407,7 @@ docker-compose exec web python manage.py migrate
 ## 🆘 Getting Help
 
 If stuck:
+
 1. Check terminal output for errors
 2. Read error messages carefully
 3. Verify all services are running
@@ -389,9 +417,10 @@ If stuck:
 
 ---
 
-## 🎉 You're All Set!
+## 🎉 You're All Set
 
 If you can:
+
 - ✅ Access Django admin
 - ✅ View API docs
 - ✅ Login with demo accounts

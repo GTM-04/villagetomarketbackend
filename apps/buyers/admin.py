@@ -27,7 +27,7 @@ class BuyerProfileAdmin(admin.ModelAdmin):
         'total_spent',
         'successful_transactions',
         'saved_listings_count',
-        '  _count',
+        'followed_farmers_count',
         'created_at',
         'updated_at'
     ]

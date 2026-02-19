@@ -25,6 +25,7 @@
 ## 🚀 Quick Start
 
 ### Base Configuration
+
 ```javascript
 const API_CONFIG = {
   baseURL: 'http://localhost:8001/api/v1',
@@ -36,6 +37,7 @@ const API_CONFIG = {
 ```
 
 ### Demo Accounts
+
 ```javascript
 // Farmer Account
 const DEMO_FARMER = {
@@ -55,6 +57,7 @@ const DEMO_BUYER = {
 ## 🔐 Authentication
 
 ### Flow Overview
+
 1. User registers or logs in
 2. Backend returns `access_token` and `refresh_token`
 3. Store tokens securely (localStorage for web, SecureStore for mobile)
@@ -64,6 +67,7 @@ const DEMO_BUYER = {
 ### Endpoints
 
 #### 1. Register User
+
 ```http
 POST /auth/register
 Content-Type: application/json
@@ -79,6 +83,7 @@ Content-Type: application/json
 ```
 
 **Response (201 Created):**
+
 ```json
 {
   "access_token": "eyJ0eXAiOiJKV1QiLCJhbGc...",
@@ -94,6 +99,7 @@ Content-Type: application/json
 ```
 
 #### 2. Login
+
 ```http
 POST /auth/login
 Content-Type: application/json
@@ -107,6 +113,7 @@ Content-Type: application/json
 **Response (200 OK):** Same as register
 
 #### 3. Refresh Token
+
 ```http
 POST /auth/refresh
 Content-Type: application/json
@@ -119,6 +126,7 @@ Content-Type: application/json
 **Response (200 OK):** Returns new tokens
 
 ### Using Tokens
+
 ```javascript
 // Add to all authenticated requests
 headers: {
@@ -134,12 +142,14 @@ headers: {
 ### **Users**
 
 #### Get Current User Profile
+
 ```http
 GET /users/me
 Authorization: Bearer {token}
 ```
 
 **Response (200 OK):**
+
 ```json
 {
   "id": "550e8400-e29b-41d4-a716-446655440000",
@@ -159,6 +169,7 @@ Authorization: Bearer {token}
 ```
 
 #### Update User Profile
+
 ```http
 PATCH /users/me
 Authorization: Bearer {token}
@@ -179,11 +190,13 @@ Content-Type: application/json
 ### **Listings**
 
 #### List All Listings
+
 ```http
 GET /listings/?district=Harare&produce_type=1&status=active&page=1&page_size=20
 ```
 
 **Query Parameters:**
+
 - `district` (optional): Filter by district
 - `produce_type` (optional): Filter by produce type ID
 - `status` (optional): Default "active"
@@ -191,6 +204,7 @@ GET /listings/?district=Harare&produce_type=1&status=active&page=1&page_size=20
 - `page_size` (optional): Items per page (default: 20, max: 100)
 
 **Response (200 OK):**
+
 ```json
 [
   {
@@ -217,6 +231,7 @@ GET /listings/?district=Harare&produce_type=1&status=active&page=1&page_size=20
 ```
 
 #### Create Listing (Farmers Only)
+
 ```http
 POST /listings/
 Authorization: Bearer {token}
@@ -236,6 +251,7 @@ Content-Type: application/json
 **Response (201 Created):** Returns created listing
 
 #### Get Listing Details
+
 ```http
 GET /listings/{listing_id}
 ```
@@ -243,6 +259,7 @@ GET /listings/{listing_id}
 **Response (200 OK):** Returns single listing object
 
 #### Delete Listing (Owner Only)
+
 ```http
 DELETE /listings/{listing_id}
 Authorization: Bearer {token}
@@ -255,12 +272,14 @@ Authorization: Bearer {token}
 ### **Messaging**
 
 #### List Conversations
+
 ```http
 GET /messaging/conversations
 Authorization: Bearer {token}
 ```
 
 **Response (200 OK):**
+
 ```json
 [
   {
@@ -277,12 +296,14 @@ Authorization: Bearer {token}
 ```
 
 #### Get Messages in Conversation
+
 ```http
 GET /messaging/conversations/{conversation_id}/messages
 Authorization: Bearer {token}
 ```
 
 **Response (200 OK):**
+
 ```json
 [
   {
@@ -307,15 +328,18 @@ Authorization: Bearer {token}
 ### **Pricing**
 
 #### Get Market Prices
+
 ```http
 GET /pricing/market-prices?district=Harare&produce_type=Tomatoes
 ```
 
 **Query Parameters:**
+
 - `district` (optional): Filter by district
 - `produce_type` (optional): Filter by produce name
 
 **Response (200 OK):**
+
 ```json
 [
   {
@@ -335,12 +359,14 @@ GET /pricing/market-prices?district=Harare&produce_type=Tomatoes
 ### **Notifications**
 
 #### List Notifications
+
 ```http
 GET /notifications/
 Authorization: Bearer {token}
 ```
 
 **Response (200 OK):**
+
 ```json
 [
   {
@@ -355,12 +381,14 @@ Authorization: Bearer {token}
 ```
 
 #### Mark Notification as Read
+
 ```http
 POST /notifications/{notification_id}/read
 Authorization: Bearer {token}
 ```
 
 **Response (200 OK):**
+
 ```json
 {
   "message": "Notification marked as read"
@@ -372,12 +400,14 @@ Authorization: Bearer {token}
 ### **Marketplace**
 
 #### List Orders
+
 ```http
 GET /marketplace/orders
 Authorization: Bearer {token}
 ```
 
 **Response (200 OK):**
+
 ```json
 [
   {
@@ -397,6 +427,7 @@ Authorization: Bearer {token}
 ### **Offline Sync**
 
 #### Sync Offline Changes
+
 ```http
 POST /sync/
 Authorization: Bearer {token}
@@ -421,6 +452,7 @@ Content-Type: application/json
 ```
 
 **Response (200 OK):**
+
 ```json
 {
   "success": true,
@@ -444,6 +476,7 @@ Content-Type: application/json
 ## 💬 WebSocket (Real-time Chat)
 
 ### Connection
+
 ```javascript
 const conversationId = '660e8400-e29b-41d4-a716-446655440000';
 const ws = new WebSocket(`ws://localhost:8001/ws/messaging/${conversationId}/`);
@@ -455,6 +488,7 @@ const ws = new WebSocket(`ws://localhost:8001/ws/messaging/${conversationId}/`);
 ### Message Types
 
 #### Send Chat Message
+
 ```javascript
 ws.send(JSON.stringify({
   type: 'chat_message',
@@ -464,6 +498,7 @@ ws.send(JSON.stringify({
 ```
 
 #### Send Typing Indicator
+
 ```javascript
 ws.send(JSON.stringify({
   type: 'typing',
@@ -472,6 +507,7 @@ ws.send(JSON.stringify({
 ```
 
 #### Send Read Receipt
+
 ```javascript
 ws.send(JSON.stringify({
   type: 'read_receipt',
@@ -482,6 +518,7 @@ ws.send(JSON.stringify({
 ### Receiving Messages
 
 #### Chat Message
+
 ```json
 {
   "type": "chat_message",
@@ -497,6 +534,7 @@ ws.send(JSON.stringify({
 ```
 
 #### Typing Indicator
+
 ```json
 {
   "type": "typing",
@@ -507,6 +545,7 @@ ws.send(JSON.stringify({
 ```
 
 #### Read Receipt
+
 ```json
 {
   "type": "read_receipt",
@@ -520,6 +559,7 @@ ws.send(JSON.stringify({
 ## 📊 Data Models
 
 ### User Types
+
 ```typescript
 type UserType = 'farmer' | 'buyer';
 
@@ -548,6 +588,7 @@ interface BuyerProfile {
 ```
 
 ### Listing
+
 ```typescript
 interface Listing {
   id: string;
@@ -571,6 +612,7 @@ interface ProduceType {
 ```
 
 ### Message
+
 ```typescript
 interface Conversation {
   id: string;
@@ -593,6 +635,7 @@ interface Message {
 ```
 
 ### Notification
+
 ```typescript
 type NotificationType = 
   | 'new_message' 
@@ -617,6 +660,7 @@ interface Notification {
 ## ⚠️ Error Handling
 
 ### Error Response Format
+
 ```json
 {
   "error": "Error message",
@@ -977,6 +1021,7 @@ const ChatComponent = ({ conversationId }) => {
 ## 📤 File Upload
 
 ### Upload Listing Images
+
 ```javascript
 const uploadListingImage = async (listingId, file) => {
   const formData = new FormData();
@@ -1033,6 +1078,7 @@ const loadMore = async () => {
 ## ✅ Best Practices
 
 ### 1. Token Management
+
 ```javascript
 // Store tokens securely
 localStorage.setItem('access_token', token);  // Web
@@ -1043,6 +1089,7 @@ localStorage.setItem('access_token', token);  // Web
 ```
 
 ### 2. Error Handling
+
 ```javascript
 try {
   const response = await api.get('/listings/');
@@ -1062,6 +1109,7 @@ try {
 ```
 
 ### 3. Loading States
+
 ```javascript
 const [loading, setLoading] = useState(false);
 
@@ -1079,6 +1127,7 @@ const fetchData = async () => {
 ```
 
 ### 4. Debouncing Search
+
 ```javascript
 import { debounce } from 'lodash';
 
@@ -1089,6 +1138,7 @@ const debouncedSearch = debounce(async (query) => {
 ```
 
 ### 5. WebSocket Reconnection
+
 ```javascript
 const connectWebSocket = (conversationId, retries = 3) => {
   const ws = new WebSocket(`ws://localhost:8001/ws/messaging/${conversationId}/`);
@@ -1110,6 +1160,7 @@ const connectWebSocket = (conversationId, retries = 3) => {
 ## 🔍 Testing Endpoints
 
 ### Using cURL
+
 ```bash
 # Login
 curl -X POST http://localhost:8001/api/v1/auth/login \
@@ -1125,6 +1176,7 @@ curl http://localhost:8001/api/v1/users/me \
 ```
 
 ### Using Postman
+
 1. Import API collection from API docs
 2. Set environment variable: `baseUrl = http://localhost:8001/api/v1`
 3. Create `{{token}}` variable
@@ -1135,6 +1187,7 @@ curl http://localhost:8001/api/v1/users/me \
 ## 📱 Mobile App Considerations
 
 ### React Native
+
 ```javascript
 // Use AsyncStorage for tokens
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -1147,6 +1200,7 @@ const token = await AsyncStorage.getItem('access_token');
 ```
 
 ### Flutter
+
 ```dart
 // Use flutter_secure_storage for tokens
 // Use dio package for HTTP requests
@@ -1158,19 +1212,23 @@ const token = await AsyncStorage.getItem('access_token');
 ## 🎯 Quick Reference
 
 ### Important URLs
-- **API Docs**: http://localhost:8001/api/docs
-- **Health Check**: http://localhost:8001/health
+
+- **API Docs**: <http://localhost:8001/api/docs>
+- **Health Check**: <http://localhost:8001/health>
 - **WebSocket**: ws://localhost:8001/ws/messaging/{id}/
 
 ### Rate Limits
+
 - Authenticated: 100 requests/minute
 - Unauthenticated: 20 requests/minute
 
 ### File Size Limits
+
 - Images: 10MB max
 - Other files: 10MB max
 
 ### Supported Image Formats
+
 - JPEG, PNG, WebP
 
 ---
@@ -1178,13 +1236,15 @@ const token = await AsyncStorage.getItem('access_token');
 ## 🆘 Support
 
 ### For Issues
-- Check API docs: http://localhost:8001/api/docs
+
+- Check API docs: <http://localhost:8001/api/docs>
 - Review error messages carefully
 - Check network tab in browser DevTools
 - Verify token is being sent correctly
 
 ### Contact
-- Email: api-support@villagetomarket.zw
+
+- Email: <api-support@villagetomarket.zw>
 - Slack: #frontend-support
 
 ---
@@ -1192,6 +1252,7 @@ const token = await AsyncStorage.getItem('access_token');
 ## 📝 Changelog
 
 ### Version 1.0.0 (Feb 16, 2026)
+
 - Initial API release
 - All core endpoints implemented
 - WebSocket chat support

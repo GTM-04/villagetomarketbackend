@@ -13,6 +13,7 @@
 A **comprehensive, production-ready** backend system for an agricultural marketplace connecting Zimbabwean farmers to buyers with:
 
 ### Core Features Implemented
+
 ✅ User authentication (JWT-based)  
 ✅ Farmer and Buyer profiles  
 ✅ Produce listings with photos  
@@ -29,6 +30,7 @@ A **comprehensive, production-ready** backend system for an agricultural marketp
 ## 🏗️ Architecture Overview
 
 ### Technology Stack
+
 - **Backend Framework**: Django 5.0+
 - **API Framework**: FastAPI
 - **Database**: PostgreSQL 15+
@@ -38,6 +40,7 @@ A **comprehensive, production-ready** backend system for an agricultural marketp
 - **Search**: Elasticsearch (optional)
 
 ### Applications Created
+
 ```
 ✅ apps/core/          - Base models and utilities
 ✅ apps/users/         - User authentication
@@ -98,38 +101,46 @@ villagetomarketbackend/
 ## 🔌 API Endpoints Implemented
 
 ### Authentication (`/api/v1/auth/`)
+
 - `POST /register` - Register new user
 - `POST /login` - User login
 - `POST /refresh` - Refresh access token
 
 ### Users (`/api/v1/users/`)
+
 - `GET /me` - Get current user profile
 - `PATCH /me` - Update user profile
 
 ### Listings (`/api/v1/listings/`)
+
 - `GET /` - List all listings (with filters)
 - `POST /` - Create new listing
 - `GET /{id}` - Get listing details
 - `DELETE /{id}` - Delete listing
 
 ### Messaging (`/api/v1/messaging/`)
+
 - `GET /conversations` - List conversations
 - `GET /conversations/{id}/messages` - Get messages
 - `WS /ws/messaging/{id}/` - WebSocket chat
 
 ### Pricing (`/api/v1/pricing/`)
+
 - `GET /market-prices` - Get market prices
 - Price alerts and trends
 
 ### Notifications (`/api/v1/notifications/`)
+
 - `GET /` - List notifications
 - `POST /{id}/read` - Mark as read
 
 ### Marketplace (`/api/v1/marketplace/`)
+
 - `GET /orders` - List orders
 - Order management
 
 ### Offline Sync (`/api/v1/sync/`)
+
 - `POST /` - Sync offline changes
 
 ---
@@ -137,6 +148,7 @@ villagetomarketbackend/
 ## 🗄️ Database Models
 
 ### Users & Profiles
+
 - **User**: Core user model with phone-based auth
 - **FarmerProfile**: Farm details, verification
 - **BuyerProfile**: Organization, buyer type
@@ -144,6 +156,7 @@ villagetomarketbackend/
 - **UserSettings**: User preferences
 
 ### Listings
+
 - **Category**: Produce categories
 - **ProduceType**: Types of produce
 - **Listing**: Farmer listings
@@ -151,19 +164,23 @@ villagetomarketbackend/
 - **ListingView**: View tracking
 
 ### Messaging
+
 - **Conversation**: Chat conversations
 - **Message**: Individual messages
 - **MessageAttachment**: File attachments
 
 ### Pricing
+
 - **MarketPrice**: Current market prices
 - **PriceTrend**: Price trend analysis
 - **PriceAlert**: User price alerts
 
 ### Notifications
+
 - **Notification**: User notifications
 
 ### Marketplace
+
 - **Order**: Purchase orders
 - **Transaction**: Payment transactions
 
@@ -172,11 +189,13 @@ villagetomarketbackend/
 ## ⚙️ Background Tasks (Celery)
 
 ### Scheduled Tasks
+
 ✅ **Update Market Prices** - Runs hourly  
 ✅ **Calculate Price Trends** - Daily at 2 AM  
 ✅ **Send Price Alerts** - Every 30 minutes  
 
 ### Async Tasks
+
 ✅ Send SMS notifications  
 ✅ Send email notifications  
 ✅ Process image uploads  
@@ -187,6 +206,7 @@ villagetomarketbackend/
 ## 🚀 Getting Started
 
 ### Quick Start
+
 ```bash
 # 1. Clone and navigate
 cd villagetomarketbackend
@@ -203,13 +223,15 @@ celery -A config beat -l info            # Celery scheduler
 ```
 
 ### Demo Accounts
+
 - **Farmer**: +263771234567 / password123
 - **Buyer**: +263772345678 / password123
 
 ### Access Points
-- Django Admin: http://localhost:8000/admin
-- API Docs: http://localhost:8001/api/docs
-- Health Check: http://localhost:8001/health
+
+- Django Admin: <http://localhost:8000/admin>
+- API Docs: <http://localhost:8001/api/docs>
+- Health Check: <http://localhost:8001/health>
 
 ---
 
@@ -238,6 +260,7 @@ celery -A config beat -l info            # Celery scheduler
 ## 🌍 Key Features
 
 ### For Farmers
+
 - Create and manage produce listings
 - Upload product photos
 - Chat with buyers in real-time
@@ -246,6 +269,7 @@ celery -A config beat -l info            # Celery scheduler
 - Receive SMS/Push notifications
 
 ### For Buyers
+
 - Search listings by location & type
 - Direct messaging with farmers
 - Price tracking & alerts
@@ -253,6 +277,7 @@ celery -A config beat -l info            # Celery scheduler
 - Market intelligence
 
 ### Technical Highlights
+
 - **Progressive Web App**: Works offline
 - **Real-time Chat**: WebSocket messaging
 - **Offline Sync**: Continue working without internet
@@ -269,6 +294,7 @@ celery -A config beat -l info            # Celery scheduler
 ✅ Multi-container setup (Django, FastAPI, PostgreSQL, Redis, Celery)
 
 Quick Docker Start:
+
 ```bash
 docker-compose up --build
 ```
@@ -280,6 +306,7 @@ docker-compose up --build
 ✅ **Seed Script**: `python manage.py seed_data`
 
 Seeds with:
+
 - 4 produce categories
 - 25+ produce types
 - 2 demo users (farmer & buyer)
@@ -290,6 +317,7 @@ Seeds with:
 ## 🧪 Testing Ready
 
 Framework structure ready for:
+
 - Unit tests (pytest)
 - Integration tests
 - API tests
@@ -300,6 +328,7 @@ Framework structure ready for:
 ## 🎨 Admin Interface
 
 ✅ Full Django Admin dashboard with:
+
 - User management
 - Listing moderation
 - Message monitoring
@@ -312,6 +341,7 @@ Framework structure ready for:
 ## 📱 Mobile-Ready
 
 API designed for:
+
 - iOS apps (React Native/Swift)
 - Android apps (React Native/Kotlin)
 - Progressive Web Apps
@@ -346,6 +376,7 @@ API designed for:
 ## 📈 Scalability
 
 The system is designed to scale:
+
 - **Horizontal scaling**: Multiple app servers behind load balancer
 - **Database**: PostgreSQL with read replicas
 - **Caching**: Redis cluster
@@ -357,6 +388,7 @@ The system is designed to scale:
 ## 🔮 Future Enhancements (Roadmap)
 
 The system is ready to extend with:
+
 - Payment integration (EcoCash, OneMoney)
 - Mobile apps (iOS/Android)
 - AI price prediction
@@ -371,12 +403,14 @@ The system is ready to extend with:
 ## 📞 What's Next?
 
 ### For Development
+
 1. **Run migrations**: `python manage.py migrate`
 2. **Seed data**: `python manage.py seed_data`
 3. **Start servers**: Use setup script or manually
-4. **Test API**: Visit http://localhost:8001/api/docs
+4. **Test API**: Visit <http://localhost:8001/api/docs>
 
 ### For Production
+
 1. **Review .env.example**: Configure environment variables
 2. **Set up server**: Follow `docs/DEPLOYMENT.md`
 3. **Configure services**: Nginx, Gunicorn, Celery
@@ -384,6 +418,7 @@ The system is ready to extend with:
 5. **Enable backups**: Database and media files
 
 ### For Frontend Integration
+
 1. **Read API docs**: `docs/API.md`
 2. **Test endpoints**: Use provided demo accounts
 3. **WebSocket**: Connect to `/ws/messaging/`
@@ -405,6 +440,7 @@ The system is ready to extend with:
 ## ✨ Highlights
 
 This is a **complete, production-ready** system with:
+
 - ✅ Clean architecture
 - ✅ Comprehensive documentation
 - ✅ Security best practices
@@ -420,6 +456,7 @@ This is a **complete, production-ready** system with:
 ## 🎓 Learning Resources
 
 The codebase demonstrates:
+
 - Django best practices
 - FastAPI patterns
 - WebSocket implementation
@@ -441,9 +478,10 @@ The codebase demonstrates:
 
 ---
 
-## 🙌 You're Ready!
+## 🙌 You're Ready
 
 The **Village to Market Backend** is **complete and ready** for:
+
 - ✅ Local development
 - ✅ Testing
 - ✅ Production deployment

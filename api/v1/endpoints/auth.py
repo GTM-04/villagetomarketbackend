@@ -27,9 +27,9 @@ router = APIRouter()
 # Pydantic models
 class UserRegisterRequest(BaseModel):
     full_name: str = Field(..., min_length=2, max_length=255)
-    phone_number: str = Field(..., regex=r'^\+263\d{9}$')
+    phone_number: str = Field(..., pattern=r'^\+263\d{9}$')
     password: str = Field(..., min_length=6)
-    user_type: str = Field(..., regex='^(farmer|buyer)$')
+    user_type: str = Field(..., pattern='^(farmer|buyer)$')
     district: Optional[str] = None
     ward: Optional[str] = None
 
