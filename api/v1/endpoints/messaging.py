@@ -5,6 +5,7 @@ Messaging endpoints - Conversations and messages.
 from fastapi import APIRouter, Depends, HTTPException, status
 from pydantic import BaseModel
 from typing import List, Optional
+from asgiref.sync import sync_to_async
 import os
 import django
 

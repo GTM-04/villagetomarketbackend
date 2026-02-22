@@ -6,6 +6,7 @@ from fastapi import APIRouter, Depends, HTTPException, status, Query
 from pydantic import BaseModel, Field
 from typing import Optional, List
 from datetime import date
+from asgiref.sync import sync_to_async
 import os
 import django
 

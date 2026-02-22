@@ -5,6 +5,7 @@ User endpoints - Profile management.
 from fastapi import APIRouter, Depends, HTTPException, status
 from pydantic import BaseModel
 from typing import Optional
+from asgiref.sync import sync_to_async
 import os
 import django
 
@@ -46,28 +47,38 @@ async def get_current_user_profile(current_user: User = Depends(get_current_user
     profile_data = None
     
     if current_user.user_type == 'farmer':
-        profile = current_user.farmer_profile
+        # Use sync_to_async to access related field
+        @sync_to_async
+        def get_farmer_profile():
+            return current_user.farmer_profile
+        
+        profile = await get_farmer_profile()
         profile_data = {
             "farm_name": profile.farm_name,
-            "farm_size": str(profile.farm_size),
-            "verified": profile.verified,
+            "farm_size": str(profile.farm_size) if profile.farm_size else None,
+            "verified": getattr(profile, 'verified', False),
         }
     elif current_user.user_type == 'buyer':
-        profile = current_user.buyer_profile
+        # Use sync_to_async to access related field
+        @sync_to_async
+        def get_buyer_profile():
+            return current_user.buyer_profile
+        
+        profile = await get_buyer_profile()
         profile_data = {
-            "organization_name": profile.organization_name,
-            "buyer_type": profile.buyer_type,
+            "organization_name": getattr(profile, 'organization_name', ''),
+            "buyer_type": getattr(profile, 'buyer_type', ''),
         }
     
     return {
         "id": str(current_user.id),
         "full_name": current_user.full_name,
         "phone_number": current_user.phone_number,
-        "email": current_user.email,
+        "email": getattr(current_user, 'email', ''),
         "user_type": current_user.user_type,
-        "district": current_user.district,
-        "ward": current_user.ward,
-        "is_verified": current_user.is_verified,
+        "district": getattr(current_user, 'district', ''),
+        "ward": getattr(current_user, 'ward', ''),
+        "is_verified": getattr(current_user, 'is_verified', False),
         "profile": profile_data,
     }
 
@@ -82,13 +93,13 @@ async def update_profile(
     """
     if data.full_name:
         current_user.full_name = data.full_name
-    if data.email:
+    if data.email and hasattr(current_user, 'email'):
         current_user.email = data.email
-    if data.district:
+    if data.district and hasattr(current_user, 'district'):
         current_user.district = data.district
-    if data.ward:
+    if data.ward and hasattr(current_user, 'ward'):
         current_user.ward = data.ward
     
-    current_user.save()
+    await sync_to_async(current_user.save)()
     
     return await get_current_user_profile(current_user)
