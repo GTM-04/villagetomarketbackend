@@ -91,8 +91,9 @@ async def get_current_user(
             headers={"WWW-Authenticate": "Bearer"},
         )
     
+    from asgiref.sync import sync_to_async
     try:
-        user = User.objects.get(id=user_id)
+        user = await sync_to_async(User.objects.get)(id=user_id)
     except User.DoesNotExist:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
@@ -113,11 +114,17 @@ async def get_current_active_farmer(
     current_user: User = Depends(get_current_user)
 ) -> User:
     """Get current user if they are a farmer."""
+    import logging
+    logging.basicConfig(level=logging.INFO)
+    logger = logging.getLogger("farmer-auth-debug")
+    logger.info(f"Authenticated user: id={getattr(current_user, 'id', None)}, type={getattr(current_user, 'user_type', None)}")
     if current_user.user_type != 'farmer':
+        logger.warning(f"User type is not farmer: {current_user.user_type}")
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="User is not a farmer"
         )
+    logger.info("User is a farmer, access granted.")
     return current_user
 
 
