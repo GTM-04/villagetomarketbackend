@@ -19,11 +19,30 @@ os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'config.settings.development')
 # is populated before importing code that may import ORM models.
 django_asgi_app = get_asgi_application()
 
+# Import FastAPI app
+from api.main import app as fastapi_app
+
 # Import WebSocket routing
 from apps.messaging.routing import websocket_urlpatterns
 
+
+async def http_router(scope, receive, send):
+    """Route HTTP requests between Django and FastAPI based on path."""
+    if scope["type"] == "http":
+        path = scope.get("path", "")
+        # Route /api/* to FastAPI (handles /api/docs, /api/v1/*, etc.)
+        if path.startswith("/api/"):
+            await fastapi_app(scope, receive, send)
+        else:
+            # All other paths go to Django
+            await django_asgi_app(scope, receive, send)
+    else:
+        # Non-HTTP requests go to Django
+        await django_asgi_app(scope, receive, send)
+
+
 application = ProtocolTypeRouter({
-    "http": django_asgi_app,
+    "http": http_router,
     "websocket": AllowedHostsOriginValidator(
         AuthMiddlewareStack(
             URLRouter(

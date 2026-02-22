@@ -43,9 +43,9 @@ async def list_conversations(current_user: User = Depends(get_current_user)):
     """
     from django.db.models import Q
     
-    conversations = Conversation.objects.filter(
+    conversations = await sync_to_async(lambda: list(Conversation.objects.filter(
         Q(participant_1=current_user) | Q(participant_2=current_user)
-    ).select_related('participant_1', 'participant_2')
+    ).select_related('participant_1', 'participant_2')) )()
     
     return [
         {
@@ -71,7 +71,7 @@ async def get_messages(
     Get messages in a conversation.
     """
     try:
-        conversation = Conversation.objects.get(id=conversation_id)
+        conversation = await sync_to_async(Conversation.objects.get)(id=conversation_id)
     except Conversation.DoesNotExist:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,

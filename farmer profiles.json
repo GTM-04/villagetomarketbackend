@@ -1,0 +1,27 @@
+[
+    {
+        "active_listings": 0,
+        "average_rating": 0,
+        "badges": "[]",
+        "certifications": "[]",
+        "created_at": "2026-02-22 13:05:16.604226",
+        "farm_description": "",
+        "farm_name": "",
+        "farm_size": null,
+        "farm_size_unit": "hectares",
+        "farming_experience_years": null,
+        "id": 1,
+        "is_organic_certified": 0,
+        "primary_crops": "[]",
+        "successful_sales": 0,
+        "total_listings": 0,
+        "total_ratings": 0,
+        "total_revenue": 0,
+        "updated_at": "2026-02-22 13:05:16.604226",
+        "user_id": 1,
+        "verification_documents": "[]",
+        "verification_notes": "",
+        "verification_status": "pending",
+        "verified_at": null
+    }
+]

@@ -37,9 +37,9 @@ async def list_orders(current_user: User = Depends(get_current_user)):
     """
     from django.db.models import Q
     
-    orders = Order.objects.filter(
+    orders = await sync_to_async(lambda: list(Order.objects.filter(
         Q(buyer=current_user) | Q(farmer=current_user)
-    ).select_related('listing')
+    ).select_related('listing')) )()
     
     return [
         {

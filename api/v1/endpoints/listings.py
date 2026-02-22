@@ -102,27 +102,27 @@ async def create_listing(
     Create a new listing (farmers only).
     """
     try:
-        produce_type = ProduceType.objects.get(id=data.produce_type_id)
+            produce_type = await sync_to_async(ProduceType.objects.get)(id=data.produce_type_id)
     except ProduceType.DoesNotExist:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Produce type not found"
         )
     
-    listing = Listing.objects.create(
-        farmer=current_user,
-        produce_type=produce_type,
-        title=f"{produce_type.name} - {current_user.district}",
-        quantity_available=data.quantity_available,
-        unit=data.unit,
-        price_per_unit=data.price_per_unit,
-        description=data.description,
-        district=current_user.district,
-        ward=current_user.ward,
-        is_organic=data.is_organic,
-        harvest_date=data.harvest_date,
-        status='active',
-    )
+        listing = await sync_to_async(Listing.objects.create)(
+            farmer=current_user,
+            produce_type=produce_type,
+            title=f"{produce_type.name} - {current_user.district}",
+            quantity_available=data.quantity_available,
+            unit=data.unit,
+            price_per_unit=data.price_per_unit,
+            description=data.description,
+            district=current_user.district,
+            ward=current_user.ward,
+            is_organic=data.is_organic,
+            harvest_date=data.harvest_date,
+            status='active',
+        )
     
     return {
         "id": str(listing.id),

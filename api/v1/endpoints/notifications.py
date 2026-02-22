@@ -58,8 +58,8 @@ async def mark_notification_read(
     Mark notification as read.
     """
     try:
-        notification = Notification.objects.get(id=notification_id, user=current_user)
-        notification.mark_as_read()
+        notification = await sync_to_async(Notification.objects.get)(id=notification_id, user=current_user)
+        await sync_to_async(notification.mark_as_read)()
         return {"message": "Notification marked as read"}
     except Notification.DoesNotExist:
         from fastapi import HTTPException, status

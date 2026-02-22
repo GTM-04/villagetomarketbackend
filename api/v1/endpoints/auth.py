@@ -5,6 +5,7 @@ Authentication endpoints - Register, login, refresh token.
 from fastapi import APIRouter, HTTPException, status, Depends
 from pydantic import BaseModel, EmailStr, Field
 from typing import Optional
+from asgiref.sync import sync_to_async
 import os
 import django
 
@@ -56,31 +57,36 @@ async def register(data: UserRegisterRequest):
     Register a new user (farmer or buyer).
     """
     # Check if user already exists
-    if User.objects.filter(phone_number=data.phone_number).exists():
+    user_exists = await sync_to_async(User.objects.filter(phone_number=data.phone_number).exists)()
+    if user_exists:
+        # If user exists, return error
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Phone number already registered"
         )
-    
     # Create user
-    user = User.objects.create(
+    user = await sync_to_async(User.objects.create)(
         full_name=data.full_name,
         phone_number=data.phone_number,
         user_type=data.user_type,
         district=data.district or '',
-        ward=data.ward or '',
         is_active=True,
     )
-    user.set_password(data.password)
-    user.save()
+    if hasattr(user, 'ward'):
+        user.ward = data.ward or ''
+        await sync_to_async(user.save)()
+    await sync_to_async(user.set_password)(data.password)
+    await sync_to_async(user.save)()
     
     # Create profile based on user type
     if data.user_type == 'farmer':
         from apps.farmers.models import FarmerProfile
-        FarmerProfile.objects.create(user=user)
+        exists = await sync_to_async(FarmerProfile.objects.filter(user=user).exists)()
+        if not exists:
+            await sync_to_async(FarmerProfile.objects.create)(user=user)
     else:
         from apps.buyers.models import BuyerProfile
-        BuyerProfile.objects.create(user=user)
+        await sync_to_async(BuyerProfile.objects.create)(user=user)
     
     # Create tokens
     access_token = create_access_token({"sub": str(user.id)})
@@ -106,7 +112,7 @@ async def login(data: UserLoginRequest):
     """
     # Find user
     try:
-        user = User.objects.get(phone_number=data.phone_number)
+        user = await sync_to_async(User.objects.get)(phone_number=data.phone_number)
     except User.DoesNotExist:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
@@ -114,7 +120,8 @@ async def login(data: UserLoginRequest):
         )
     
     # Verify password
-    if not user.check_password(data.password):
+    password_valid = await sync_to_async(user.check_password)(data.password)
+    if not password_valid:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Invalid phone number or password"
@@ -160,7 +167,7 @@ async def refresh_token(data: RefreshTokenRequest):
     user_id = payload.get("sub")
     
     try:
-        user = User.objects.get(id=user_id)
+        user = await sync_to_async(User.objects.get)(id=user_id)
     except User.DoesNotExist:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
