@@ -35,19 +35,22 @@ async def list_notifications(current_user: User = Depends(get_current_user)):
     """
     Get user's notifications.
     """
-    notifications = current_user.notifications.all()[:50]
-    
-    return [
-        {
-            "id": str(notif.id),
-            "title": notif.title,
-            "message": notif.message,
-            "notification_type": notif.notification_type,
-            "is_read": notif.is_read,
-            "created_at": notif.created_at.isoformat(),
-        }
-        for notif in notifications
-    ]
+    @sync_to_async
+    def fetch_notifications():
+        notifs = list(current_user.notifications.all()[:50])
+        return [
+            {
+                "id": str(notif.id),
+                "title": notif.title,
+                "message": notif.message,
+                "notification_type": notif.notification_type,
+                "is_read": notif.is_read,
+                "created_at": notif.created_at.isoformat(),
+            }
+            for notif in notifs
+        ]
+
+    return await fetch_notifications()
 
 
 @router.post("/{notification_id}/read")

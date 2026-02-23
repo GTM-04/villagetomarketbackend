@@ -27,7 +27,6 @@ class UserProfile(BaseModel):
     email: Optional[str]
     user_type: str
     district: str
-    ward: str
     is_verified: bool
     profile: Optional[dict] = None
 
@@ -36,7 +35,6 @@ class UpdateProfileRequest(BaseModel):
     full_name: Optional[str] = None
     email: Optional[str] = None
     district: Optional[str] = None
-    ward: Optional[str] = None
 
 
 @router.get("/me", response_model=UserProfile)
@@ -77,7 +75,6 @@ async def get_current_user_profile(current_user: User = Depends(get_current_user
         "email": getattr(current_user, 'email', ''),
         "user_type": current_user.user_type,
         "district": getattr(current_user, 'district', ''),
-        "ward": getattr(current_user, 'ward', ''),
         "is_verified": getattr(current_user, 'is_verified', False),
         "profile": profile_data,
     }
@@ -93,12 +90,10 @@ async def update_profile(
     """
     if data.full_name:
         current_user.full_name = data.full_name
-    if data.email and hasattr(current_user, 'email'):
+    if data.email:
         current_user.email = data.email
-    if data.district and hasattr(current_user, 'district'):
+    if data.district:
         current_user.district = data.district
-    if data.ward and hasattr(current_user, 'ward'):
-        current_user.ward = data.ward
     
     await sync_to_async(current_user.save)()
     

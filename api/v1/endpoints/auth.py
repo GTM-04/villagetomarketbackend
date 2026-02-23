@@ -54,29 +54,34 @@ class RefreshTokenRequest(BaseModel):
 @router.post("/register", response_model=TokenResponse, status_code=status.HTTP_201_CREATED)
 async def register(data: UserRegisterRequest):
     """
-    Register a new user (farmer or buyer).
+    Register a new user (farmer or buyer). If user exists, adds the new profile type.
     """
     # Check if user already exists
-    user_exists = await sync_to_async(User.objects.filter(phone_number=data.phone_number).exists)()
-    if user_exists:
-        # If user exists, return error
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Phone number already registered"
-        )
-    # Create user
-    user = await sync_to_async(User.objects.create)(
-        full_name=data.full_name,
-        phone_number=data.phone_number,
-        user_type=data.user_type,
-        district=data.district or '',
-        is_active=True,
-    )
-    if hasattr(user, 'ward'):
-        user.ward = data.ward or ''
+    existing_user = await sync_to_async(User.objects.filter(phone_number=data.phone_number).first)()
+    
+    if existing_user:
+        # User exists - check if they're adding a new profile type
+        if existing_user.user_type == data.user_type:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=f"Phone number already registered as {data.user_type}"
+            )
+        
+        # Add the new profile type to existing user
+        user = existing_user
+        user.user_type = data.user_type  # Update to new type
         await sync_to_async(user.save)()
-    await sync_to_async(user.set_password)(data.password)
-    await sync_to_async(user.save)()
+    else:
+        # Create new user
+        user = await sync_to_async(User.objects.create)(
+            full_name=data.full_name,
+            phone_number=data.phone_number,
+            user_type=data.user_type,
+            district=data.district or '',
+            is_active=True,
+        )
+        await sync_to_async(user.set_password)(data.password)
+        await sync_to_async(user.save)()
     
     # Create profile based on user type
     if data.user_type == 'farmer':
@@ -86,7 +91,9 @@ async def register(data: UserRegisterRequest):
             await sync_to_async(FarmerProfile.objects.create)(user=user)
     else:
         from apps.buyers.models import BuyerProfile
-        await sync_to_async(BuyerProfile.objects.create)(user=user)
+        exists = await sync_to_async(BuyerProfile.objects.filter(user=user).exists)()
+        if not exists:
+            await sync_to_async(BuyerProfile.objects.create)(user=user)
     
     # Create tokens
     access_token = create_access_token({"sub": str(user.id)})

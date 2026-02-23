@@ -71,33 +71,38 @@ async def get_messages(
     """
     Get messages in a conversation.
     """
-    try:
-        conversation = await sync_to_async(Conversation.objects.get)(id=conversation_id)
-    except Conversation.DoesNotExist:
+    @sync_to_async
+    def fetch_messages():
+        try:
+            conversation = Conversation.objects.get(id=conversation_id)
+        except Conversation.DoesNotExist:
+            return None, None
+
+        if current_user.id not in [conversation.participant_1_id, conversation.participant_2_id]:
+            return "forbidden", None
+
+        msgs = list(conversation.messages.select_related('sender').all())
+        conversation.mark_read(current_user)
+        return "ok", [
+            {
+                "id": str(msg.id),
+                "sender_id": str(msg.sender.id),
+                "text": msg.text,
+                "created_at": msg.created_at.isoformat(),
+                "is_read": msg.is_read,
+            }
+            for msg in msgs
+        ]
+
+    result, data = await fetch_messages()
+    if result is None:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Conversation not found"
         )
-    
-    # Verify user is participant
-    if current_user not in [conversation.participant_1, conversation.participant_2]:
+    if result == "forbidden":
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Access denied"
         )
-    
-    messages = conversation.messages.all()
-    
-    # Mark as read
-    conversation.mark_read(current_user)
-    
-    return [
-        {
-            "id": str(msg.id),
-            "sender_id": str(msg.sender.id),
-            "text": msg.text,
-            "created_at": msg.created_at.isoformat(),
-            "is_read": msg.is_read,
-        }
-        for msg in messages
-    ]
+    return data
