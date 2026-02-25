@@ -1,14 +1,16 @@
 """
-Pricing endpoints - Market prices and trends.
+Pricing endpoints - Market prices, trends, and ML-based price recommendation.
 """
 
-from fastapi import APIRouter, Depends
-from pydantic import BaseModel
+from fastapi import APIRouter, Depends, UploadFile, File, HTTPException, status
+from pydantic import BaseModel, Field
 from typing import List, Optional
 from datetime import date
 from asgiref.sync import sync_to_async
+import io
 import os
 import django
+import numpy as np
 
 # Setup Django
 os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'config.settings.development')
@@ -16,11 +18,13 @@ django.setup()
 
 from apps.pricing.models import MarketPrice, PriceTrend
 from api.core.security import get_current_user
+from api.v1.ml.pricing_recommender import recommend_price
 
 router = APIRouter()
 
 
-# Pydantic models
+# ── Pydantic models ───────────────────────────────────────────────────────────
+
 class MarketPriceResponse(BaseModel):
     produce_type: str
     district: str
@@ -31,13 +35,59 @@ class MarketPriceResponse(BaseModel):
     recorded_date: date
 
 
+class PriceRecommendRequest(BaseModel):
+    """
+    Fields required to recommend a price for a new crop listing.
+    Mirrors the Django Listing model fields used during feature engineering.
+    """
+    produce_type: str = Field(..., example="Tomatoes",
+                              description="Crop type — must match a known ProduceType name")
+    variety: str      = Field("Standard", example="Roma",
+                              description="Sub-variety, e.g. Roma, Yellow, Hybrid")
+    grade: str        = Field("Grade B", example="Grade A",
+                              description="Quality grade: Grade A/B/C, Premium, Export Quality, Standard")
+    unit: str         = Field("kg", example="kg",
+                              description="Measurement unit: kg, bags, crates, tonnes …")
+    district: str     = Field("Harare", example="Harare",
+                              description="Growing / delivery district")
+    is_organic: bool  = Field(False, example=False,
+                              description="Organic certification flag")
+    quality_tags: List[str] = Field(
+        default_factory=list,
+        example=["fresh", "pesticide-free"],
+        description="Quality descriptors: fresh, pesticide-free, locally-grown, non-gmo, …",
+    )
+    quantity_available: float = Field(..., gt=0, example=300.0,
+                                      description="Total quantity available for sale")
+    minimum_order: Optional[float] = Field(None, gt=0, example=30.0,
+                                           description="Minimum order quantity (defaults to 10 % of total)")
+    harvest_date: Optional[date]   = Field(None, example="2026-02-24",
+                                           description="Date the crop was harvested (ISO format)")
+    confidence_margin: float = Field(0.10, ge=0.01, le=0.50,
+                                     description="Half-width of the price band as a fraction (0.10 = ±10 %)")
+
+
+class PriceRecommendResponse(BaseModel):
+    recommended_price: float
+    price_min: float
+    price_max: float
+    currency: str
+    unit: str
+    model_used: str
+    confidence_margin: str
+    note: Optional[str] = None
+
+
+# ── Endpoints ─────────────────────────────────────────────────────────────────
+
 @router.get("/market-prices", response_model=List[MarketPriceResponse])
 async def get_market_prices(
     district: Optional[str] = None,
     produce_type: Optional[str] = None,
 ):
     """
-    Get current market prices.
+    Get current market prices for all produce types.
+    Filter by district or produce type name.
     """
     @sync_to_async
     def get_prices():
@@ -62,3 +112,115 @@ async def get_market_prices(
         ]
 
     return await get_prices()
+
+
+@router.post(
+    "/recommend",
+    response_model=PriceRecommendResponse,
+    summary="Recommend a price for a new crop listing",
+    description=(
+        "Accepts the crop listing fields and an optional crop photo. "
+        "Returns a recommended price per unit (ZWL) with a confidence band. "
+        "Uses the trained ML model when available; falls back to a "
+        "market-heuristic if the model has not yet been trained."
+    ),
+)
+async def recommend_crop_price(
+    produce_type: str       = "Tomatoes",
+    variety: str            = "Standard",
+    grade: str              = "Grade B",
+    unit: str               = "kg",
+    district: str           = "Harare",
+    is_organic: bool        = False,
+    quality_tags: str       = "",          # comma-separated in form data
+    quantity_available: float = 100.0,
+    minimum_order: Optional[float] = None,
+    harvest_date: Optional[str]    = None,
+    confidence_margin: float       = 0.10,
+    image: Optional[UploadFile]    = File(None),
+):
+    """
+    **Multipart form** endpoint so a crop photo can be uploaded alongside
+    the listing fields.
+
+    - `quality_tags` — pass as a comma-separated string, e.g. `"fresh,pesticide-free"`
+    - `image`        — optional JPEG/PNG crop photo (improves accuracy when ML model is trained)
+    """
+    # Parse quality tags from comma-separated string
+    tags = [t.strip() for t in quality_tags.split(",") if t.strip()] if quality_tags else []
+
+    # Parse harvest date
+    harvest_d: Optional[date] = None
+    if harvest_date:
+        try:
+            harvest_d = date.fromisoformat(harvest_date)
+        except ValueError:
+            raise HTTPException(
+                status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+                detail=f"Invalid harvest_date format '{harvest_date}'. Use YYYY-MM-DD.",
+            )
+
+    listing_fields = {
+        "produce_type":       produce_type,
+        "variety":            variety,
+        "grade":              grade,
+        "unit":               unit,
+        "district":           district,
+        "is_organic":         is_organic,
+        "quality_tags":       tags,
+        "quantity_available": quantity_available,
+        "minimum_order":      minimum_order,
+        "harvest_date":       harvest_d,
+    }
+
+    # Load image if provided
+    img_array: Optional[np.ndarray] = None
+    if image is not None:
+        if not image.content_type.startswith("image/"):
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Uploaded file must be an image (JPEG, PNG, …).",
+            )
+        contents = await image.read()
+        try:
+            from PIL import Image as PILImage
+            pil_img   = PILImage.open(io.BytesIO(contents)).convert("RGB").resize((224, 224))
+            img_array = np.array(pil_img, dtype=np.uint8)
+        except Exception as exc:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=f"Could not decode image: {exc}",
+            )
+
+    result = recommend_price(
+        listing_fields,
+        image=img_array,
+        confidence_margin=confidence_margin,
+    )
+
+    return result
+
+
+@router.post(
+    "/recommend/json",
+    response_model=PriceRecommendResponse,
+    summary="Recommend a price (JSON body, no image)",
+    description=(
+        "JSON-body version of the price recommendation endpoint. "
+        "Use this when no crop photo is available. "
+        "For photo-assisted recommendations use POST /recommend (multipart)."
+    ),
+)
+async def recommend_crop_price_json(payload: PriceRecommendRequest):
+    """
+    Convenience endpoint for clients that send JSON (no image upload).
+    The model uses tabular features only; the image branch runs on a
+    neutral synthetic image derived from the crop colour palette.
+    """
+    listing_fields = payload.model_dump(exclude={"confidence_margin"})
+    result = recommend_price(
+        listing_fields,
+        image=None,
+        confidence_margin=payload.confidence_margin,
+    )
+    return result
