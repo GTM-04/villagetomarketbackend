@@ -2,7 +2,7 @@
 Listing endpoints - CRUD operations for produce listings.
 """
 
-from fastapi import APIRouter, Depends, HTTPException, status, Query, UploadFile, File
+from fastapi import APIRouter, Depends, HTTPException, status, Query, UploadFile, File, Form
 from pydantic import BaseModel, Field
 from typing import Optional, List
 from datetime import date
@@ -230,8 +230,8 @@ async def delete_listing(
 @router.post("/{listing_id}/images/", status_code=status.HTTP_201_CREATED)
 async def upload_listing_image(
     listing_id: str,
-    file: UploadFile = File(...),
-    caption: str = "",
+    image: UploadFile = File(...),
+    caption: str = Form(""),
     current_user: User = Depends(get_current_active_farmer)
 ):
     """
@@ -246,13 +246,13 @@ async def upload_listing_image(
         )
 
     # Validate content type
-    if not file.content_type.startswith("image/"):
+    if not image.content_type.startswith("image/"):
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="File must be an image"
         )
 
-    contents = await file.read()
+    contents = await image.read()
 
     def save_image():
         from django.core.files.base import ContentFile
@@ -260,7 +260,7 @@ async def upload_listing_image(
             listing=listing,
             caption=caption,
         )
-        img.image.save(file.filename, ContentFile(contents), save=True)
+        img.image.save(image.filename, ContentFile(contents), save=True)
         return {
             "id": str(img.id),
             "url": img.image.url,
