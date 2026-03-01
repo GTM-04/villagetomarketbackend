@@ -24,19 +24,34 @@ router = APIRouter()
 # Pydantic models
 class ListingResponse(BaseModel):
     id: str
+    listing_number: str = ""
     title: str
+    description: str = ""
     produce_type: dict
+    category: dict = {}
+    variety: str = ""
+    grade: str = ""
+    quality_tags: List[str] = []
     quantity_available: float
     unit: str
+    minimum_order: Optional[float] = None
     price_per_unit: float
     currency: str
     district: str
+    farm_location: str = ""
     status: str
     is_organic: bool
     is_negotiable: bool = False
     delivery_available: bool = False
+    delivery_radius_km: Optional[int] = None
+    pickup_available: bool = True
     harvest_date: Optional[date]
-    images: List[str] = []
+    available_from: Optional[date] = None
+    available_until: Optional[date] = None
+    view_count: int = 0
+    inquiry_count: int = 0
+    images: List[dict] = []
+    farmer: dict = {}
 
 
 class CreateListingRequest(BaseModel):
@@ -76,7 +91,9 @@ async def list_listings(
     """
     @sync_to_async
     def fetch_listings():
-        queryset = Listing.objects.select_related('produce_type', 'farmer').filter(status=status)
+        queryset = Listing.objects.select_related(
+            'produce_type', 'produce_type__category', 'category', 'farmer'
+        ).filter(status=status)
 
         if district:
             queryset = queryset.filter(district__iexact=district)
@@ -90,22 +107,57 @@ async def list_listings(
         return [
             {
                 "id": str(listing.id),
+                "listing_number": listing.listing_number,
                 "title": listing.title,
+                "description": listing.description,
                 "produce_type": {
                     "id": listing.produce_type.id,
                     "name": listing.produce_type.name,
+                    "slug": listing.produce_type.slug,
                 },
+                "category": {
+                    "id": listing.category.id,
+                    "name": listing.category.name,
+                    "slug": listing.category.slug,
+                },
+                "variety": listing.variety,
+                "grade": listing.grade,
+                "quality_tags": listing.quality_tags or [],
                 "quantity_available": float(listing.quantity_available),
                 "unit": listing.unit,
+                "minimum_order": float(listing.minimum_order) if listing.minimum_order else None,
                 "price_per_unit": float(listing.price_per_unit),
                 "currency": listing.currency,
                 "district": listing.district,
+                "farm_location": listing.farm_location,
                 "status": listing.status,
                 "is_organic": listing.is_organic,
                 "is_negotiable": listing.is_negotiable,
                 "delivery_available": listing.delivery_available,
+                "delivery_radius_km": listing.delivery_radius_km,
+                "pickup_available": listing.pickup_available,
                 "harvest_date": listing.harvest_date,
-                "images": [img.image.url for img in listing.images.all()],
+                "available_from": listing.available_from,
+                "available_until": listing.available_until,
+                "view_count": listing.view_count,
+                "inquiry_count": listing.inquiry_count,
+                "images": [
+                    {
+                        "id": str(img.id),
+                        "url": img.image.url,
+                        "caption": img.caption,
+                        "is_primary": img.is_primary,
+                        "order": img.order,
+                    }
+                    for img in listing.images.all()
+                ],
+                "farmer": {
+                    "id": listing.farmer.id,
+                    "name": listing.farmer.full_name,
+                    "district": listing.farmer.district,
+                    "is_verified": listing.farmer.is_verified,
+                    "profile_picture": listing.farmer.profile_picture.url if listing.farmer.profile_picture else None,
+                },
             }
             for listing in listings
         ]
@@ -173,52 +225,130 @@ async def create_listing(
     
     return {
         "id": str(listing.id),
+        "listing_number": listing.listing_number,
         "title": listing.title,
+        "description": listing.description,
         "produce_type": {
             "id": listing.produce_type.id,
             "name": listing.produce_type.name,
+            "slug": listing.produce_type.slug,
         },
+        "category": {
+            "id": listing.category.id,
+            "name": listing.category.name,
+            "slug": listing.category.slug,
+        },
+        "variety": listing.variety,
+        "grade": listing.grade,
+        "quality_tags": listing.quality_tags or [],
         "quantity_available": float(listing.quantity_available),
         "unit": listing.unit,
+        "minimum_order": None,
         "price_per_unit": float(listing.price_per_unit),
         "currency": listing.currency,
         "district": listing.district,
+        "farm_location": listing.farm_location,
         "status": listing.status,
         "is_organic": listing.is_organic,
         "is_negotiable": listing.is_negotiable,
         "delivery_available": listing.delivery_available,
+        "delivery_radius_km": listing.delivery_radius_km,
+        "pickup_available": listing.pickup_available,
         "harvest_date": listing.harvest_date,
+        "available_from": listing.available_from,
+        "available_until": listing.available_until,
+        "view_count": 0,
+        "inquiry_count": 0,
         "images": [],
+        "farmer": {
+            "id": current_user.id,
+            "name": current_user.full_name,
+            "district": current_user.district,
+            "is_verified": current_user.is_verified,
+            "profile_picture": current_user.profile_picture.url if current_user.profile_picture else None,
+        },
     }
 
 
 @router.get("/{listing_id}", response_model=ListingResponse)
 async def get_listing(listing_id: str):
     """
-    Get a specific listing by ID.
+    Get a specific listing by ID — full detail view.
     """
     @sync_to_async
     def fetch_listing():
         try:
-            listing = Listing.objects.select_related('produce_type').get(id=listing_id)
+            listing = Listing.objects.select_related(
+                'produce_type', 'produce_type__category', 'category', 'farmer'
+            ).get(id=listing_id)
+
+            # Increment view count
+            Listing.objects.filter(id=listing_id).update(view_count=listing.view_count + 1)
+
+            farmer = listing.farmer
+            farmer_picture = None
+            if farmer.profile_picture:
+                try:
+                    farmer_picture = farmer.profile_picture.url
+                except Exception:
+                    farmer_picture = None
+
             return {
                 "id": str(listing.id),
+                "listing_number": listing.listing_number,
                 "title": listing.title,
+                "description": listing.description,
                 "produce_type": {
                     "id": listing.produce_type.id,
                     "name": listing.produce_type.name,
+                    "slug": listing.produce_type.slug,
                 },
+                "category": {
+                    "id": listing.category.id,
+                    "name": listing.category.name,
+                    "slug": listing.category.slug,
+                },
+                "variety": listing.variety,
+                "grade": listing.grade,
+                "quality_tags": listing.quality_tags or [],
                 "quantity_available": float(listing.quantity_available),
                 "unit": listing.unit,
+                "minimum_order": float(listing.minimum_order) if listing.minimum_order else None,
                 "price_per_unit": float(listing.price_per_unit),
                 "currency": listing.currency,
                 "district": listing.district,
+                "farm_location": listing.farm_location,
                 "status": listing.status,
                 "is_organic": listing.is_organic,
                 "is_negotiable": listing.is_negotiable,
                 "delivery_available": listing.delivery_available,
+                "delivery_radius_km": listing.delivery_radius_km,
+                "pickup_available": listing.pickup_available,
                 "harvest_date": listing.harvest_date,
-                "images": [img.image.url for img in listing.images.all()],
+                "available_from": listing.available_from,
+                "available_until": listing.available_until,
+                "view_count": listing.view_count + 1,
+                "inquiry_count": listing.inquiry_count,
+                "images": [
+                    {
+                        "id": str(img.id),
+                        "url": img.image.url,
+                        "caption": img.caption,
+                        "is_primary": img.is_primary,
+                        "order": img.order,
+                    }
+                    for img in listing.images.all()
+                ],
+                "farmer": {
+                    "id": farmer.id,
+                    "name": farmer.full_name,
+                    "phone": farmer.phone_number,
+                    "district": farmer.district,
+                    "location": farmer.location,
+                    "profile_picture": farmer_picture,
+                    "is_verified": farmer.is_verified,
+                    "member_since": str(farmer.date_joined.year) if farmer.date_joined else None,
+                },
             }
         except Listing.DoesNotExist:
             return None
