@@ -230,12 +230,14 @@ async def delete_listing(
 @router.post("/{listing_id}/images/", status_code=status.HTTP_201_CREATED)
 async def upload_listing_image(
     listing_id: str,
-    image: UploadFile = File(...),
+    image: Optional[UploadFile] = File(None),
     caption: str = Form(""),
     current_user: User = Depends(get_current_active_farmer)
 ):
     """
     Upload an image for a listing (owner only).
+    If no image is provided the request succeeds with an empty response,
+    allowing the frontend to always call this endpoint after creating a listing.
     """
     try:
         listing = await sync_to_async(Listing.objects.get)(id=listing_id, farmer=current_user)
@@ -244,6 +246,10 @@ async def upload_listing_image(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Listing not found"
         )
+
+    # No image supplied — return early so the listing creation flow still succeeds
+    if image is None or image.filename == "":
+        return {"id": None, "url": None, "caption": caption, "is_primary": False}
 
     # Validate content type
     if not image.content_type.startswith("image/"):
