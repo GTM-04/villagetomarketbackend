@@ -33,6 +33,8 @@ class ListingResponse(BaseModel):
     district: str
     status: str
     is_organic: bool
+    is_negotiable: bool = False
+    delivery_available: bool = False
     harvest_date: Optional[date]
     images: List[str] = []
 
@@ -47,6 +49,18 @@ class CreateListingRequest(BaseModel):
     harvest_date: Optional[date] = None
     available_from: Optional[date] = None
     available_until: Optional[date] = None
+    # Frontend may send district as 'district' or 'districtName'
+    district: Optional[str] = None
+    districtName: Optional[str] = None
+    # Optional extra fields sent by frontend
+    negotiable: bool = False
+    deliveryAvailable: bool = False
+    produceName: Optional[str] = None
+    categoryName: Optional[str] = None
+
+    def resolved_district(self) -> str:
+        """Return the district from whichever field was supplied."""
+        return self.district or self.districtName or ""
 
 
 @router.get("/", response_model=List[ListingResponse])
@@ -88,6 +102,8 @@ async def list_listings(
                 "district": listing.district,
                 "status": listing.status,
                 "is_organic": listing.is_organic,
+                "is_negotiable": listing.is_negotiable,
+                "delivery_available": listing.delivery_available,
                 "harvest_date": listing.harvest_date,
                 "images": [img.image.url for img in listing.images.all()],
             }
@@ -134,17 +150,21 @@ async def create_listing(
     
     from datetime import date as date_type, timedelta
     today = date_type.today()
+    # Use district from payload; fall back to farmer's profile district
+    district = data.resolved_district() or getattr(current_user, 'district', '')
     listing = await sync_to_async(Listing.objects.create)(
         farmer=current_user,
         produce_type=produce_type,
         category=produce_type.category,
-        title=f"{produce_type.name} - {getattr(current_user, 'district', '')}",
+        title=f"{produce_type.name} - {district}",
         quantity_available=data.quantity_available,
         unit=data.unit,
         price_per_unit=data.price_per_unit,
         description=data.description,
-        district=getattr(current_user, 'district', ''),
+        district=district,
         is_organic=data.is_organic,
+        is_negotiable=data.negotiable,
+        delivery_available=data.deliveryAvailable,
         harvest_date=data.harvest_date,
         available_from=data.available_from or today,
         available_until=data.available_until or (today + timedelta(days=30)),
@@ -165,6 +185,8 @@ async def create_listing(
         "district": listing.district,
         "status": listing.status,
         "is_organic": listing.is_organic,
+        "is_negotiable": listing.is_negotiable,
+        "delivery_available": listing.delivery_available,
         "harvest_date": listing.harvest_date,
         "images": [],
     }
@@ -193,6 +215,8 @@ async def get_listing(listing_id: str):
                 "district": listing.district,
                 "status": listing.status,
                 "is_organic": listing.is_organic,
+                "is_negotiable": listing.is_negotiable,
+                "delivery_available": listing.delivery_available,
                 "harvest_date": listing.harvest_date,
                 "images": [img.image.url for img in listing.images.all()],
             }
