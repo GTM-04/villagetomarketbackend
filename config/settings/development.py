@@ -46,4 +46,11 @@ except:
     ELASTICSEARCH_DSL = {}
     print("⚠️  Elasticsearch not available - search features disabled")
 
+# Channel Layers - Use in-memory for development (no Redis needed)
+CHANNEL_LAYERS = {
+    'default': {
+        'BACKEND': 'channels.layers.InMemoryChannelLayer'
+    }
+}
+
 print("🚀 Running in DEVELOPMENT mode")
