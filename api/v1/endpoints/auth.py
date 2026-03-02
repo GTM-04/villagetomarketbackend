@@ -51,6 +51,15 @@ class RefreshTokenRequest(BaseModel):
     refresh_token: str
 
 
+class PasswordResetRequestModel(BaseModel):
+    phone_number: str
+
+
+class PasswordResetConfirmModel(BaseModel):
+    reset_token: str
+    new_password: str = Field(..., min_length=6)
+
+
 @router.post("/register", response_model=TokenResponse, status_code=status.HTTP_201_CREATED)
 async def register(data: UserRegisterRequest):
     """
@@ -195,4 +204,106 @@ async def refresh_token(data: RefreshTokenRequest):
             "phone_number": user.phone_number,
             "user_type": user.user_type,
         }
+    }
+
+
+@router.post("/password-reset/request", status_code=status.HTTP_200_OK)
+async def password_reset_request(data: PasswordResetRequestModel):
+    """
+    Request a password reset token for the given phone number.
+
+    In production this token would be delivered via SMS.
+    For development it is returned directly in the response.
+    The token expires in 15 minutes.
+    """
+    from datetime import timedelta
+    from api.core.config import settings
+    from jose import jwt
+
+    @sync_to_async
+    def find_user():
+        try:
+            return User.objects.get(phone_number=data.phone_number)
+        except User.DoesNotExist:
+            return None
+
+    user = await find_user()
+
+    # Always return 200 to avoid leaking whether a phone number is registered.
+    if user is None:
+        return {
+            "message": "If that number is registered a reset code will appear.",
+            "reset_token": None,
+            "display_for_seconds": 30,
+        }
+
+    # Build a short-lived reset token
+    from datetime import datetime
+    expire = datetime.utcnow() + timedelta(minutes=15)
+    payload = {
+        "sub": str(user.id),
+        "exp": expire,
+        "type": "password_reset",
+    }
+    reset_token = jwt.encode(payload, settings.SECRET_KEY, algorithm="HS256")
+
+    return {
+        "message": "Use this code to reset your password. It expires in 15 minutes.",
+        "reset_token": reset_token,
+        "display_for_seconds": 30,
+    }
+
+
+@router.post("/password-reset/confirm", status_code=status.HTTP_200_OK)
+async def password_reset_confirm(data: PasswordResetConfirmModel):
+    """
+    Confirm password reset using the token received from /password-reset/request.
+    Sets the new password if the token is valid and unexpired.
+    """
+    from jose import jwt, JWTError
+    from api.core.config import settings
+
+    # Decode and validate token
+    try:
+        payload = jwt.decode(data.reset_token, settings.SECRET_KEY, algorithms=["HS256"])
+    except JWTError:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Invalid or expired reset token",
+        )
+
+    if payload.get("type") != "password_reset":
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Invalid token type",
+        )
+
+    user_id = payload.get("sub")
+
+    @sync_to_async
+    def set_new_password():
+        try:
+            user = User.objects.get(id=user_id)
+        except User.DoesNotExist:
+            return None
+        user.set_password(data.new_password)
+        user.save(update_fields=["password"])
+        return user
+
+    user = await set_new_password()
+    if user is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="User not found",
+        )
+
+    # Issue fresh tokens so the user is logged in immediately after reset
+    access_token = create_access_token({"sub": str(user.id)})
+    refresh_token = create_refresh_token({"sub": str(user.id)})
+
+    return {
+        "message": "Password updated successfully.",
+        "access_token": access_token,
+        "refresh_token": refresh_token,
+        "token_type": "bearer",
     }
