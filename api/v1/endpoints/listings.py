@@ -165,6 +165,90 @@ async def list_listings(
     return await fetch_listings()
 
 
+@router.get("/my-listings", response_model=List[ListingResponse])
+async def my_listings(
+    status: Optional[str] = None,
+    page: int = Query(1, ge=1),
+    page_size: int = Query(20, ge=1, le=100),
+    current_user: User = Depends(get_current_active_farmer),
+):
+    """
+    Return only the listings that belong to the currently authenticated farmer.
+    """
+    @sync_to_async
+    def fetch_my_listings():
+        queryset = Listing.objects.select_related(
+            'produce_type', 'produce_type__category', 'category', 'farmer'
+        ).filter(farmer=current_user)
+
+        if status:
+            queryset = queryset.filter(status=status)
+
+        start = (page - 1) * page_size
+        end = start + page_size
+        listings = queryset.order_by('-created_at')[start:end]
+
+        return [
+            {
+                "id": str(listing.id),
+                "listing_number": listing.listing_number,
+                "title": listing.title,
+                "description": listing.description,
+                "produce_type": {
+                    "id": listing.produce_type.id,
+                    "name": listing.produce_type.name,
+                    "slug": listing.produce_type.slug,
+                },
+                "category": {
+                    "id": listing.category.id,
+                    "name": listing.category.name,
+                    "slug": listing.category.slug,
+                } if listing.category else {},
+                "variety": listing.variety,
+                "grade": listing.grade,
+                "quality_tags": listing.quality_tags or [],
+                "quantity_available": float(listing.quantity_available),
+                "unit": listing.unit,
+                "minimum_order": float(listing.minimum_order) if listing.minimum_order else None,
+                "price_per_unit": float(listing.price_per_unit),
+                "currency": listing.currency,
+                "district": listing.district,
+                "farm_location": listing.farm_location,
+                "status": listing.status,
+                "is_organic": listing.is_organic,
+                "is_negotiable": listing.is_negotiable,
+                "delivery_available": listing.delivery_available,
+                "delivery_radius_km": listing.delivery_radius_km,
+                "pickup_available": listing.pickup_available,
+                "harvest_date": listing.harvest_date,
+                "available_from": listing.available_from,
+                "available_until": listing.available_until,
+                "view_count": listing.view_count,
+                "inquiry_count": listing.inquiry_count,
+                "images": [
+                    {
+                        "id": str(img.id),
+                        "url": img.image.url,
+                        "caption": img.caption,
+                        "is_primary": img.is_primary,
+                        "order": img.order,
+                    }
+                    for img in listing.images.all()
+                ],
+                "farmer": {
+                    "id": listing.farmer.id,
+                    "name": listing.farmer.full_name,
+                    "district": listing.farmer.district,
+                    "is_verified": listing.farmer.is_verified,
+                    "profile_picture": listing.farmer.profile_picture.url if listing.farmer.profile_picture else None,
+                },
+            }
+            for listing in listings
+        ]
+
+    return await fetch_my_listings()
+
+
 @router.get("/produce-types", response_model=List[dict])
 async def get_produce_types():
     """
@@ -275,6 +359,15 @@ async def get_listing(listing_id: str):
     """
     Get a specific listing by ID — full detail view.
     """
+    import uuid as _uuid
+    try:
+        _uuid.UUID(listing_id)
+    except (ValueError, AttributeError):
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Listing not found"
+        )
+
     @sync_to_async
     def fetch_listing():
         try:
