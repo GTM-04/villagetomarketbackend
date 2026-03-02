@@ -127,6 +127,47 @@ async def create_or_get_conversation(
     return data_out
 
 
+@router.get("/conversations/{conversation_id}", response_model=ConversationResponse)
+async def get_conversation(
+    conversation_id: str,
+    current_user: User = Depends(get_current_user),
+):
+    """
+    Get a single conversation by ID.
+    """
+    @sync_to_async
+    def fetch_conv():
+        from django.db.models import Q
+        try:
+            conv = Conversation.objects.select_related(
+                'participant_1', 'participant_2'
+            ).get(
+                id=conversation_id
+            )
+        except Conversation.DoesNotExist:
+            return None
+        if current_user.id not in [conv.participant_1_id, conv.participant_2_id]:
+            return "forbidden"
+        other = conv.get_other_participant(current_user)
+        return {
+            "id": str(conv.id),
+            "other_user": {
+                "id": str(other.id),
+                "name": other.full_name,
+            },
+            "last_message": conv.last_message_text or None,
+            "last_message_at": conv.last_message_at.isoformat() if conv.last_message_at else None,
+            "unread_count": conv.get_unread_count(current_user),
+        }
+
+    result = await fetch_conv()
+    if result is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Conversation not found")
+    if result == "forbidden":
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Access denied")
+    return result
+
+
 @router.get("/conversations", response_model=List[ConversationResponse])
 async def list_conversations(current_user: User = Depends(get_current_user)):
     """

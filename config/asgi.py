@@ -8,9 +8,12 @@ https://docs.djangoproject.com/en/5.0/howto/deployment/asgi/
 """
 
 import os
+from urllib.parse import parse_qs
+
 from django.core.asgi import get_asgi_application
+from django.contrib.auth.models import AnonymousUser
 from channels.routing import ProtocolTypeRouter, URLRouter
-from channels.auth import AuthMiddlewareStack
+from channels.db import database_sync_to_async
 from channels.security.websocket import AllowedHostsOriginValidator
 
 os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'config.settings.development')
@@ -24,6 +27,40 @@ from api.main import app as fastapi_app
 
 # Import WebSocket routing
 from apps.messaging.routing import websocket_urlpatterns
+
+
+@database_sync_to_async
+def _get_user_from_jwt(token: str):
+    """Decode a JWT access token and return the corresponding User or AnonymousUser."""
+    from rest_framework_simplejwt.tokens import AccessToken
+    from rest_framework_simplejwt.exceptions import TokenError, InvalidToken
+    from apps.users.models import User
+    try:
+        validated = AccessToken(token)
+        user_id = validated.get('user_id') or validated.get('sub')
+        return User.objects.get(id=user_id)
+    except (TokenError, InvalidToken, User.DoesNotExist, Exception):
+        return AnonymousUser()
+
+
+class JWTAuthMiddleware:
+    """
+    Channels middleware that authenticates WebSocket connections using a JWT
+    token passed as the ``token`` query-string parameter.
+    """
+    def __init__(self, inner):
+        self.inner = inner
+
+    async def __call__(self, scope, receive, send):
+        if scope['type'] == 'websocket':
+            query_string = scope.get('query_string', b'').decode()
+            params = parse_qs(query_string)
+            token_list = params.get('token', [])
+            if token_list:
+                scope['user'] = await _get_user_from_jwt(token_list[0])
+            else:
+                scope['user'] = AnonymousUser()
+        return await self.inner(scope, receive, send)
 
 
 async def http_router(scope, receive, send):
@@ -44,7 +81,7 @@ async def http_router(scope, receive, send):
 application = ProtocolTypeRouter({
     "http": http_router,
     "websocket": AllowedHostsOriginValidator(
-        AuthMiddlewareStack(
+        JWTAuthMiddleware(
             URLRouter(
                 websocket_urlpatterns
             )
