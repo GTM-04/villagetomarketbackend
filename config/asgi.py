@@ -11,7 +11,6 @@ import os
 from urllib.parse import parse_qs
 
 from django.core.asgi import get_asgi_application
-from django.contrib.auth.models import AnonymousUser
 from channels.routing import ProtocolTypeRouter, URLRouter
 from channels.db import database_sync_to_async
 from channels.security.websocket import AllowedHostsOriginValidator
@@ -21,6 +20,9 @@ os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'config.settings.development')
 # Initialize Django ASGI application early to ensure the AppRegistry
 # is populated before importing code that may import ORM models.
 django_asgi_app = get_asgi_application()
+
+# Safe to import Django auth models only AFTER get_asgi_application()
+from django.contrib.auth.models import AnonymousUser
 
 # Import FastAPI app
 from api.main import app as fastapi_app
