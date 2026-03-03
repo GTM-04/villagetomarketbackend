@@ -208,6 +208,7 @@ async def refresh_token(data: RefreshTokenRequest):
 
 
 @router.post("/password-reset/request", status_code=status.HTTP_200_OK)
+@router.post("/forgot-password", status_code=status.HTTP_200_OK)        # alias
 async def password_reset_request(data: PasswordResetRequestModel):
     """
     Request a password reset token for the given phone number.
@@ -255,6 +256,7 @@ async def password_reset_request(data: PasswordResetRequestModel):
 
 
 @router.post("/password-reset/confirm", status_code=status.HTTP_200_OK)
+@router.post("/password-reset", status_code=status.HTTP_200_OK)          # alias
 async def password_reset_confirm(data: PasswordResetConfirmModel):
     """
     Confirm password reset using the token received from /password-reset/request.
