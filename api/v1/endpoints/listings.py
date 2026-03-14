@@ -17,6 +17,7 @@ django.setup()
 from apps.listings.models import Listing, ListingImage, ProduceType, Category
 from apps.users.models import User
 from api.core.security import get_current_user, get_current_active_farmer
+from django.db.models import Q
 
 router = APIRouter()
 
@@ -108,6 +109,7 @@ class CreateListingRequest(BaseModel):
 async def list_listings(
     district: Optional[str] = None,
     produce_type: Optional[int] = None,
+    q: Optional[str] = None,
     status: str = "active",
     page: int = Query(1, ge=1),
     page_size: int = Query(20, ge=1, le=100),
@@ -125,6 +127,15 @@ async def list_listings(
             queryset = queryset.filter(district__iexact=district)
         if produce_type:
             queryset = queryset.filter(produce_type_id=produce_type)
+        if q:
+            query = q.strip()
+            queryset = queryset.filter(
+                Q(title__icontains=query)
+                | Q(description__icontains=query)
+                | Q(district__icontains=query)
+                | Q(produce_type__name__icontains=query)
+                | Q(farmer__full_name__icontains=query)
+            )
 
         start = (page - 1) * page_size
         end = start + page_size

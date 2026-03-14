@@ -37,7 +37,7 @@ except Exception as exc:
 EMBED_DIM = 1280 if TF_AVAILABLE else 48
 
 # ── scikit-learn / xgboost ────────────────────────────────────────────────────
-from sklearn.ensemble import GradientBoostingRegressor, RandomForestRegressor
+from sklearn.ensemble import GradientBoostingRegressor, RandomForestRegressor, VotingRegressor
 from sklearn.model_selection import train_test_split, cross_val_score
 from sklearn.preprocessing import MinMaxScaler
 from sklearn.metrics import mean_absolute_error, mean_squared_error, r2_score
@@ -180,7 +180,7 @@ def build_full_feature_vector(row: dict, img_array: np.ndarray) -> np.ndarray:
 
 
 # ── Generate synthetic dataset ─────────────────────────────────────────────────
-def generate_dataset(n: int = 800):
+def generate_dataset(n: int = 2000):
     random.seed(42)
     np.random.seed(42)
     records, images, prices = [], [], []
@@ -223,8 +223,8 @@ def main():
     print("  Village-to-Market — Pricing Model Training")
     print("=" * 60)
 
-    print("\n[1/5] Generating synthetic dataset (800 samples) …")
-    records, images, prices = generate_dataset(800)
+    print("\n[1/5] Generating synthetic dataset (2000 samples) …")
+    records, images, prices = generate_dataset(2000)
     print(f"      Price range: ZWL {min(prices):.0f} - {max(prices):.0f}")
 
     print("\n[2/5] Extracting feature vectors …")
@@ -263,6 +263,23 @@ def main():
         n_estimators=200, max_depth=12, random_state=42, n_jobs=-1,
     )
 
+    # Ensemble generally improves robustness across produce classes and districts.
+    if XGB_AVAILABLE:
+        ensemble = VotingRegressor(
+            estimators=[
+                ("xgb", models["XGBoost"]),
+                ("rf", models["RandomForest"]),
+            ]
+        )
+    else:
+        ensemble = VotingRegressor(
+            estimators=[
+                ("gbr", models["GradientBoosting"]),
+                ("rf", models["RandomForest"]),
+            ]
+        )
+    models["Ensemble"] = ensemble
+
     results = {}
     for name, model in models.items():
         model.fit(X_train, y_train)
@@ -270,12 +287,31 @@ def main():
         mae  = mean_absolute_error(y_test, y_pred)
         rmse = float(np.sqrt(mean_squared_error(y_test, y_pred)))
         r2   = r2_score(y_test, y_pred)
-        results[name] = {"model": model, "MAE": mae, "RMSE": rmse, "R2": r2}
-        print(f"      {name:<22}  MAE={mae:6.1f}  RMSE={rmse:6.1f}  R2={r2:.4f}")
+        cv_mae = -cross_val_score(
+            model,
+            X_train,
+            y_train,
+            cv=3,
+            scoring="neg_mean_absolute_error",
+            n_jobs=1,
+        ).mean()
+        results[name] = {
+            "model": model,
+            "MAE": mae,
+            "RMSE": rmse,
+            "R2": r2,
+            "CV_MAE": float(cv_mae),
+        }
+        print(
+            f"      {name:<22}  MAE={mae:6.1f}  RMSE={rmse:6.1f}  R2={r2:.4f}  CV_MAE={cv_mae:6.1f}"
+        )
 
-    best_name  = max(results, key=lambda k: results[k]["R2"])
+    best_name  = min(results, key=lambda k: results[k]["CV_MAE"])
     best_model = results[best_name]["model"]
-    print(f"\n      >> Best model: {best_name}  (R2 = {results[best_name]['R2']:.4f})")
+    print(
+        f"\n      >> Best model: {best_name}  "
+        f"(CV MAE = {results[best_name]['CV_MAE']:.2f}, R2 = {results[best_name]['R2']:.4f})"
+    )
 
     print("\n[5/5] Saving artifacts …")
     models_dir = pathlib.Path(__file__).resolve().parents[1] / "notebooks" / "saved_models"

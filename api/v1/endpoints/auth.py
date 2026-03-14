@@ -308,4 +308,13 @@ async def password_reset_confirm(data: PasswordResetConfirmModel):
         "access_token": access_token,
         "refresh_token": refresh_token,
         "token_type": "bearer",
+        "user": {
+            "id": str(user.id),
+            "full_name": user.full_name,
+            "phone_number": user.phone_number,
+            "user_type": user.user_type,
+            "district": user.district,
+            "ward": user.ward,
+            "is_verified": user.is_verified,
+        },
     }

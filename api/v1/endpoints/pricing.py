@@ -2,7 +2,7 @@
 Pricing endpoints - Market prices, trends, and ML-based price recommendation.
 """
 
-from fastapi import APIRouter, Depends, UploadFile, File, HTTPException, status
+from fastapi import APIRouter, Depends, UploadFile, File, HTTPException, status, Query
 from pydantic import BaseModel, Field
 from typing import List, Optional
 from datetime import date
@@ -33,6 +33,17 @@ class MarketPriceResponse(BaseModel):
     price_max: float
     unit: str
     recorded_date: date
+
+
+class PriceTrendResponse(BaseModel):
+    produce_type: str
+    district: str
+    period_start: date
+    period_end: date
+    trend_direction: str
+    price_change_percent: float
+    average_price: float
+    forecast_next_period: Optional[float] = None
 
 
 class PriceRecommendRequest(BaseModel):
@@ -84,6 +95,7 @@ class PriceRecommendResponse(BaseModel):
 async def get_market_prices(
     district: Optional[str] = None,
     produce_type: Optional[str] = None,
+    limit: int = Query(100, ge=1, le=500),
 ):
     """
     Get current market prices for all produce types.
@@ -108,10 +120,107 @@ async def get_market_prices(
                 "unit": price.unit,
                 "recorded_date": price.recorded_date,
             }
-            for price in queryset[:50]
+            for price in queryset[:limit]
         ]
 
     return await get_prices()
+
+
+@router.get("/trends", response_model=List[PriceTrendResponse])
+async def get_price_trends(
+    produce_type: Optional[str] = None,
+    district: Optional[str] = None,
+    days: int = Query(30, ge=7, le=120),
+    limit: int = Query(12, ge=1, le=100),
+):
+    """
+    Get trend summaries for produce pricing.
+
+    Prefers persisted PriceTrend rows. If none exist, derives lightweight trend
+    summaries from recent MarketPrice data so buyers still see trend direction.
+    """
+
+    @sync_to_async
+    def fetch_trends():
+        trends_qs = PriceTrend.objects.select_related('produce_type').all()
+
+        if district:
+            trends_qs = trends_qs.filter(district__iexact=district)
+        if produce_type:
+            trends_qs = trends_qs.filter(produce_type__name__icontains=produce_type)
+
+        trends = list(trends_qs.order_by('-period_end')[:limit])
+        if trends:
+            return [
+                {
+                    "produce_type": t.produce_type.name,
+                    "district": t.district,
+                    "period_start": t.period_start,
+                    "period_end": t.period_end,
+                    "trend_direction": t.trend_direction,
+                    "price_change_percent": float(t.price_change_percent),
+                    "average_price": float(t.average_price),
+                    "forecast_next_period": float(t.forecast_next_period)
+                    if t.forecast_next_period is not None
+                    else None,
+                }
+                for t in trends
+            ]
+
+        from datetime import timedelta
+        from django.db.models import Avg
+
+        end_date = date.today()
+        start_date = end_date - timedelta(days=days)
+
+        mp_qs = MarketPrice.objects.select_related('produce_type').filter(
+            recorded_date__gte=start_date,
+            recorded_date__lte=end_date,
+        )
+        if district:
+            mp_qs = mp_qs.filter(district__iexact=district)
+        if produce_type:
+            mp_qs = mp_qs.filter(produce_type__name__icontains=produce_type)
+
+        grouped = {}
+        for row in mp_qs.order_by('produce_type__name', 'district', 'recorded_date'):
+            key = (row.produce_type.name, row.district)
+            grouped.setdefault(key, []).append(row)
+
+        derived = []
+        for (name, location), rows in grouped.items():
+            first_price = float(rows[0].price_avg)
+            last_price = float(rows[-1].price_avg)
+            avg_price = float(sum(float(r.price_avg) for r in rows) / len(rows))
+            if first_price <= 0:
+                pct = 0.0
+            else:
+                pct = ((last_price - first_price) / first_price) * 100.0
+
+            if pct > 2:
+                direction = 'increasing'
+            elif pct < -2:
+                direction = 'decreasing'
+            else:
+                direction = 'stable'
+
+            derived.append(
+                {
+                    "produce_type": name,
+                    "district": location,
+                    "period_start": rows[0].recorded_date,
+                    "period_end": rows[-1].recorded_date,
+                    "trend_direction": direction,
+                    "price_change_percent": round(pct, 2),
+                    "average_price": round(avg_price, 2),
+                    "forecast_next_period": round(last_price * (1 + (pct / 100.0)), 2),
+                }
+            )
+
+        derived.sort(key=lambda item: abs(item['price_change_percent']), reverse=True)
+        return derived[:limit]
+
+    return await fetch_trends()
 
 
 @router.post(
