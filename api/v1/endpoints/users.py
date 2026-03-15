@@ -35,6 +35,8 @@ class UpdateProfileRequest(BaseModel):
     full_name: Optional[str] = None
     email: Optional[str] = None
     district: Optional[str] = None
+    # Allow switching between farmer and buyer on the same account
+    user_type: Optional[str] = None
 
 
 @router.get("/me", response_model=UserProfile)
@@ -88,13 +90,41 @@ async def update_profile(
     """
     Update current user's profile.
     """
+    # Basic profile fields
     if data.full_name:
         current_user.full_name = data.full_name
     if data.email:
         current_user.email = data.email
     if data.district:
         current_user.district = data.district
-    
+
+    # Optional role switch between farmer and buyer
+    if data.user_type is not None:
+        if data.user_type not in {"farmer", "buyer"}:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="user_type must be either 'farmer' or 'buyer'",
+            )
+
+        # Only do work when role is actually changing
+        if current_user.user_type != data.user_type:
+            current_user.user_type = data.user_type
+
+            # Ensure the corresponding extended profile exists so subsequent
+            # profile calls don't fail.
+            if data.user_type == "farmer":
+                from apps.farmers.models import FarmerProfile
+
+                await sync_to_async(FarmerProfile.objects.get_or_create)(
+                    user=current_user
+                )
+            elif data.user_type == "buyer":
+                from apps.buyers.models import BuyerProfile
+
+                await sync_to_async(BuyerProfile.objects.get_or_create)(
+                    user=current_user
+                )
+
     await sync_to_async(current_user.save)()
-    
+
     return await get_current_user_profile(current_user)
