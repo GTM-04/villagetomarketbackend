@@ -26,7 +26,7 @@ marshmallow==3.21.1
 
 # Background Tasks & Async
 celery==5.3.6
-redis==5.0.1
+redis>=4.6,<5.0
 aioredis==2.0.1
 flower==2.0.1
 
