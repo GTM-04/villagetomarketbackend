@@ -29,6 +29,8 @@ celery==5.3.6
 redis>=4.6,<5.0
 aioredis==2.0.1
 flower==2.0.1
+django-celery-beat>=2.6,<3
+django-celery-results>=2.5,<3
 
 # File Storage & Media
 pillow==10.2.0
