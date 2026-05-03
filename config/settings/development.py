@@ -40,11 +40,11 @@ CELERY_TASK_EAGER_PROPAGATES = True
 # Disable Elasticsearch in development if not available
 try:
     from elasticsearch import Elasticsearch
-    es = Elasticsearch([f"{os.getenv('ELASTICSEARCH_HOST', 'localhost')}:9200"])
+    es = Elasticsearch([f"http://{os.getenv('ELASTICSEARCH_HOST', 'localhost')}:9200"])
     es.ping()
 except:
     ELASTICSEARCH_DSL = {}
-    print("⚠️  Elasticsearch not available - search features disabled")
+    print("[WARNING] Elasticsearch not available - search features disabled")
 
 # Channel Layers - Use in-memory for development (no Redis needed)
 CHANNEL_LAYERS = {
@@ -53,4 +53,4 @@ CHANNEL_LAYERS = {
     }
 }
 
-print("🚀 Running in DEVELOPMENT mode")
+print("[INFO] Running in DEVELOPMENT mode")
