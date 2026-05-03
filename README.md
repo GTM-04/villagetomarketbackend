@@ -64,6 +64,10 @@ python scripts/seed_data.py
 
 ```bash
 # Django development server
+
+daphne -b 0.0.0.0 -p 8000 config.asgi:application
+
+
 python manage.py runserver
 
 # FastAPI server (in another terminal)

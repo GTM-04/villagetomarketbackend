@@ -70,7 +70,7 @@ class User(AbstractUser, TimestampedModel):
     email = models.EmailField(blank=True, null=True)
     
     # User type
-    user_type = models.CharField(max_length=10, choices=USER_TYPE_CHOICES)
+    user_type = models.CharField(max_length=10, choices=USER_TYPE_CHOICES, default='farmer')
     
     # Profile fields
     full_name = models.CharField(max_length=255)
@@ -112,7 +112,7 @@ class User(AbstractUser, TimestampedModel):
     
     # Set phone_number as the username field
     USERNAME_FIELD = 'phone_number'
-    REQUIRED_FIELDS = ['full_name', 'user_type', 'district']
+    REQUIRED_FIELDS = ['full_name', 'district']
     
     objects = UserManager()
     

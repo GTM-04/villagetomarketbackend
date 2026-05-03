@@ -65,7 +65,6 @@ class UserCreateSerializer(serializers.ModelSerializer):
             'password_confirm',
             'email',
             'full_name',
-            'user_type',
             'district',
             'location',
         ]

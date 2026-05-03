@@ -79,6 +79,8 @@ class PriceRecommendRequest(BaseModel):
 
 
 class PriceRecommendResponse(BaseModel):
+    model_config = {"protected_namespaces": ()}
+
     recommended_price: float
     price_min: float
     price_max: float

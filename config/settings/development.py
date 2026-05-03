@@ -38,13 +38,22 @@ CELERY_TASK_ALWAYS_EAGER = True
 CELERY_TASK_EAGER_PROPAGATES = True
 
 # Disable Elasticsearch in development if not available
-try:
-    from elasticsearch import Elasticsearch
-    es = Elasticsearch([f"http://{os.getenv('ELASTICSEARCH_HOST', 'localhost')}:9200"])
-    es.ping()
-except:
+import socket as _socket
+
+def _es_is_reachable(host: str = 'localhost', port: int = 9200, timeout: float = 0.5) -> bool:
+    """Fast socket probe — returns False instantly when ES is not running."""
+    try:
+        with _socket.create_connection((host, port), timeout=timeout):
+            return True
+    except (OSError, ConnectionRefusedError):
+        return False
+
+_es_host = os.getenv('ELASTICSEARCH_HOST', 'localhost')
+_es_port = int(os.getenv('ELASTICSEARCH_PORT', '9200'))
+
+if not _es_is_reachable(_es_host, _es_port):
     ELASTICSEARCH_DSL = {}
-    print("[WARNING] Elasticsearch not available - search features disabled")
+    print("[INFO] Elasticsearch not available — search features disabled (skipped)")
 
 # Channel Layers - Use in-memory for development (no Redis needed)
 CHANNEL_LAYERS = {

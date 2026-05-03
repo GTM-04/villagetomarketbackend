@@ -128,3 +128,46 @@ async def update_profile(
     await sync_to_async(current_user.save)()
 
     return await get_current_user_profile(current_user)
+
+
+class SwitchModeRequest(BaseModel):
+    mode: str  # 'farmer' or 'buyer'
+
+
+class SwitchModeResponse(BaseModel):
+    user_type: str
+    message: str
+
+
+@router.post("/switch-mode", response_model=SwitchModeResponse)
+async def switch_mode(
+    data: SwitchModeRequest,
+    current_user: User = Depends(get_current_user)
+):
+    """
+    Switch the user's active mode between farmer and buyer.
+    Both profiles already exist — this just toggles the active one.
+    """
+    if data.mode not in {'farmer', 'buyer'}:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="mode must be 'farmer' or 'buyer'",
+        )
+
+    if current_user.user_type != data.mode:
+        current_user.user_type = data.mode
+
+        # Ensure the corresponding profile exists (safety net)
+        if data.mode == 'farmer':
+            from apps.farmers.models import FarmerProfile
+            await sync_to_async(FarmerProfile.objects.get_or_create)(user=current_user)
+        else:
+            from apps.buyers.models import BuyerProfile
+            await sync_to_async(BuyerProfile.objects.get_or_create)(user=current_user)
+
+        await sync_to_async(current_user.save)()
+
+    return {
+        "user_type": current_user.user_type,
+        "message": f"Switched to {data.mode} mode",
+    }
