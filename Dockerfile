@@ -36,5 +36,9 @@ RUN python manage.py collectstatic --noinput || true
 # Expose ports
 EXPOSE 8000 8001
 
+# Copy start script
+COPY start.sh /app/
+RUN chmod +x /app/start.sh
+
 # Default command (can be overridden in docker-compose)
-CMD ["gunicorn", "config.asgi:application", "-k", "uvicorn.workers.UvicornWorker", "--bind", "0.0.0.0:8000", "--workers", "4", "--timeout", "120"]
+CMD ["/app/start.sh"]
