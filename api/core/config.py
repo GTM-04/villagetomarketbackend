@@ -4,7 +4,7 @@ FastAPI configuration settings.
 
 import os
 from pathlib import Path
-from typing import List
+from typing import List, Union
 from pydantic_settings import BaseSettings
 from pydantic import validator
 
@@ -36,17 +36,17 @@ class Settings(BaseSettings):
     REFRESH_TOKEN_EXPIRE_MINUTES: int = 60 * 24 * 30  # 30 days
     
     # CORS
-    ALLOWED_HOSTS: List[str] = [
+    ALLOWED_HOSTS: Union[str, List[str]] = [
         "http://localhost:3000",
         "http://127.0.0.1:3000",
         "http://localhost:8001",
         "http://127.0.0.1:8001",
     ]  # Update for production
     
-    CORS_ALLOWED_ORIGINS: List[str] = os.getenv(
-        "CORS_ALLOWED_ORIGINS", 
-        "https://villagetomarket.vercel.app,http://localhost:3000"
-    ).split(",")
+    CORS_ALLOWED_ORIGINS: Union[str, List[str]] = [
+        "https://villagetomarket.vercel.app",
+        "http://localhost:3000",
+    ]
     
     # File uploads
     MAX_UPLOAD_SIZE: int = 10 * 1024 * 1024  # 10MB
@@ -76,9 +76,9 @@ class Settings(BaseSettings):
     CELERY_BROKER_URL: str = os.getenv("CELERY_BROKER_URL", "redis://localhost:6379/1")
     CELERY_RESULT_BACKEND: str = os.getenv("CELERY_RESULT_BACKEND", "redis://localhost:6379/1")
     
-    @validator("ALLOWED_HOSTS", pre=True)
+    @validator("ALLOWED_HOSTS", "CORS_ALLOWED_ORIGINS", pre=True)
     def parse_hosts(cls, v):
-        """Parse ALLOWED_HOSTS from string or list."""
+        """Parse hosts or origins from string or list."""
         if isinstance(v, str):
             return [host.strip() for host in v.split(",")]
         return v
