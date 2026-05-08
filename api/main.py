@@ -43,7 +43,7 @@ app.add_middleware(
         "http://127.0.0.1:8001",
         "http://localhost:5173",  # Vite default
         "http://127.0.0.1:5173",
-    ] if settings.DEBUG else settings.ALLOWED_HOSTS,
+    ] if settings.DEBUG else settings.CORS_ALLOWED_ORIGINS,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],

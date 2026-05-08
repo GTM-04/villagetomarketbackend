@@ -43,6 +43,11 @@ class Settings(BaseSettings):
         "http://127.0.0.1:8001",
     ]  # Update for production
     
+    CORS_ALLOWED_ORIGINS: List[str] = os.getenv(
+        "CORS_ALLOWED_ORIGINS", 
+        "https://villagetomarket.vercel.app,http://localhost:3000"
+    ).split(",")
+    
     # File uploads
     MAX_UPLOAD_SIZE: int = 10 * 1024 * 1024  # 10MB
     ALLOWED_IMAGE_TYPES: List[str] = ["image/jpeg", "image/png", "image/webp"]

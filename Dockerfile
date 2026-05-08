@@ -37,4 +37,4 @@ RUN python manage.py collectstatic --noinput || true
 EXPOSE 8000 8001
 
 # Default command (can be overridden in docker-compose)
-CMD ["gunicorn", "config.wsgi:application", "--bind", "0.0.0.0:8000", "--workers", "4", "--timeout", "120"]
+CMD ["gunicorn", "config.asgi:application", "-k", "uvicorn.workers.UvicornWorker", "--bind", "0.0.0.0:8000", "--workers", "4", "--timeout", "120"]
