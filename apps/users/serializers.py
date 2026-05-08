@@ -4,7 +4,7 @@ User DRF serializers.
 
 from rest_framework import serializers
 from .models import User, UserSettings, DeviceToken
-from apps.core.utils import normalize_phone_number
+from ..core.utils import normalize_phone_number
 
 
 class UserSettingsSerializer(serializers.ModelSerializer):

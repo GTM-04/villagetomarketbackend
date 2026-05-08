@@ -5,8 +5,8 @@ User models - Custom user with phone authentication.
 from django.contrib.auth.models import AbstractUser, BaseUserManager
 from django.db import models
 from django.core.validators import RegexValidator
-from apps.core.models import TimestampedModel
-from apps.core.validators import validate_zimbabwe_phone_number
+from ..core.models import TimestampedModel
+from ..core.validators import validate_zimbabwe_phone_number
 
 
 class UserManager(BaseUserManager):

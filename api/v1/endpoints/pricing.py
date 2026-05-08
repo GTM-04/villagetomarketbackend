@@ -51,28 +51,28 @@ class PriceRecommendRequest(BaseModel):
     Fields required to recommend a price for a new crop listing.
     Mirrors the Django Listing model fields used during feature engineering.
     """
-    produce_type: str = Field(..., example="Tomatoes",
+    produce_type: str = Field(..., examples=["Tomatoes"],
                               description="Crop type — must match a known ProduceType name")
-    variety: str      = Field("Standard", example="Roma",
+    variety: str      = Field("Standard", examples=["Roma"],
                               description="Sub-variety, e.g. Roma, Yellow, Hybrid")
-    grade: str        = Field("Grade B", example="Grade A",
+    grade: str        = Field("Grade B", examples=["Grade A"],
                               description="Quality grade: Grade A/B/C, Premium, Export Quality, Standard")
-    unit: str         = Field("kg", example="kg",
+    unit: str         = Field("kg", examples=["kg"],
                               description="Measurement unit: kg, bags, crates, tonnes …")
-    district: str     = Field("Harare", example="Harare",
+    district: str     = Field("Harare", examples=["Harare"],
                               description="Growing / delivery district")
-    is_organic: bool  = Field(False, example=False,
+    is_organic: bool  = Field(False, examples=[False],
                               description="Organic certification flag")
     quality_tags: List[str] = Field(
         default_factory=list,
-        example=["fresh", "pesticide-free"],
+        examples=[["fresh", "pesticide-free"]],
         description="Quality descriptors: fresh, pesticide-free, locally-grown, non-gmo, …",
     )
-    quantity_available: float = Field(..., gt=0, example=300.0,
+    quantity_available: float = Field(..., gt=0, examples=[300.0],
                                       description="Total quantity available for sale")
-    minimum_order: Optional[float] = Field(None, gt=0, example=30.0,
+    minimum_order: Optional[float] = Field(None, gt=0, examples=[30.0],
                                            description="Minimum order quantity (defaults to 10 % of total)")
-    harvest_date: Optional[date]   = Field(None, example="2026-02-24",
+    harvest_date: Optional[date]   = Field(None, examples=["2026-02-24"],
                                            description="Date the crop was harvested (ISO format)")
     confidence_margin: float = Field(0.10, ge=0.01, le=0.50,
                                      description="Half-width of the price band as a fraction (0.10 = ±10 %)")
