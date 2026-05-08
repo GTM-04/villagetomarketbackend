@@ -12,7 +12,7 @@ from pydantic import validator
 class Settings(BaseSettings):
     """Application settings."""
     
-    # Project
+    # Project Manage
     PROJECT_NAME: str = "Village to Market API"
     VERSION: str = "1.0.0"
     API_V1_PREFIX: str = "/api/v1"
