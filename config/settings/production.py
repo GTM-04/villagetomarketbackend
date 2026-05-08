@@ -71,7 +71,14 @@ if os.getenv('SENTRY_DSN'):
     )
 
 # Logging - More comprehensive in production
-LOGGING['handlers']['file']['filename'] = '/var/log/villagetomarket/django.log'
+# We remove the file handler in production since Railway handles stdout logs.
+# This prevents FileNotFoundError for /var/log paths.
+if 'file' in LOGGING['handlers']:
+    del LOGGING['handlers']['file']
+LOGGING['root']['handlers'] = ['console']
+LOGGING['loggers']['django']['handlers'] = ['console']
+LOGGING['loggers']['apps']['handlers'] = ['console']
+
 LOGGING['root']['level'] = 'WARNING'
 LOGGING['loggers']['django']['level'] = 'WARNING'
 LOGGING['loggers']['apps']['level'] = 'INFO'
