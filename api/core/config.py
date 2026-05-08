@@ -7,6 +7,7 @@ from pathlib import Path
 from typing import List, Union
 from pydantic_settings import BaseSettings
 from pydantic import validator
+from urllib.parse import urlparse
 
 
 class Settings(BaseSettings):
@@ -74,9 +75,19 @@ class Settings(BaseSettings):
     @validator("ALLOWED_HOSTS", "CORS_ALLOWED_ORIGINS", pre=True)
     def parse_hosts(cls, v):
         """Parse hosts or origins from string or list."""
+        def _normalize(item: str):
+            item = item.strip()
+            try:
+                parsed = urlparse(item)
+                if parsed.scheme and parsed.netloc:
+                    return f"{parsed.scheme}://{parsed.netloc}"
+            except Exception:
+                pass
+            return item.rstrip('/')
+
         if isinstance(v, str):
-            return [host.strip() for host in v.split(",")]
-        return v
+            return [_normalize(host) for host in v.split(",") if host.strip()]
+        return [_normalize(host) for host in v]
     
     class Config:
         env_file = ".env"

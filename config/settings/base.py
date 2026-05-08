@@ -164,7 +164,30 @@ SIMPLE_JWT = {
 }
 
 # CORS Settings
-CORS_ALLOWED_ORIGINS = os.getenv('CORS_ALLOWED_ORIGINS', 'http://localhost:3000').split(',')
+from urllib.parse import urlparse
+
+def _normalize_origins(env_value: str):
+    """Normalize comma-separated origins by stripping whitespace, trailing
+    slashes and any path component so entries are scheme://host[:port].
+    """
+    raw = [o.strip() for o in env_value.split(',') if o.strip()]
+    normalized = []
+    for o in raw:
+        # Ensure no trailing slash and remove any path component
+        try:
+            parsed = urlparse(o)
+            if parsed.scheme and parsed.netloc:
+                normalized.append(f"{parsed.scheme}://{parsed.netloc}")
+                continue
+        except Exception:
+            pass
+
+        # Fallback: remove trailing slash only
+        normalized.append(o.rstrip('/'))
+
+    return normalized
+
+CORS_ALLOWED_ORIGINS = _normalize_origins(os.getenv('CORS_ALLOWED_ORIGINS', 'http://localhost:3000'))
 CORS_ALLOW_CREDENTIALS = True
 
 # Celery Configuration
