@@ -76,4 +76,4 @@ LOGGING['root']['level'] = 'WARNING'
 LOGGING['loggers']['django']['level'] = 'WARNING'
 LOGGING['loggers']['apps']['level'] = 'INFO'
 
-print("🚀 Running in PRODUCTION mode")
+print("Running in PRODUCTION mode")
