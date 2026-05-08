@@ -15,6 +15,7 @@ os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'config.settings.development')
 django.setup()
 
 from apps.listings.models import Listing, ListingImage, ProduceType, Category
+from apps.listings.reference_data import ensure_reference_data
 from apps.users.models import User
 from api.core.security import get_current_user, get_current_active_farmer
 from django.db.models import Q
@@ -291,6 +292,8 @@ async def get_produce_types():
     """
     Get all available produce types.
     """
+    await sync_to_async(ensure_reference_data)()
+
     @sync_to_async
     def fetch_produce_types():
         return [
@@ -314,6 +317,7 @@ async def create_listing(
     Create a new listing (farmers only).
     """
     try:
+        await sync_to_async(ensure_reference_data)()
         produce_type = await sync_to_async(ProduceType.objects.select_related('category').get)(id=data.produce_type_id)
     except ProduceType.DoesNotExist:
         raise HTTPException(

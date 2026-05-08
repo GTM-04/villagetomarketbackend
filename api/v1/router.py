@@ -16,6 +16,7 @@ from api.v1.endpoints import (
     marketplace,
     offline_sync,
 )
+from apps.listings.reference_data import ensure_reference_data
 
 api_router = APIRouter()
 
@@ -37,6 +38,8 @@ async def get_produce_types():
     Get all available produce types (top-level convenience endpoint).
     """
     from apps.listings.models import ProduceType
+
+    await sync_to_async(ensure_reference_data)()
     
     @sync_to_async
     def fetch_produce_types():

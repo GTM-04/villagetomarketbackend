@@ -13,6 +13,7 @@ import time
 
 from api.v1.router import api_router
 from api.core.config import settings
+from apps.listings.reference_data import ensure_reference_data
 
 # Configure logging
 logging.basicConfig(
@@ -154,6 +155,17 @@ async def startup_event():
     logger.info("Starting Village to Market API...")
     logger.info(f"Environment: {'Development' if settings.DEBUG else 'Production'}")
     logger.info(f"Database: {settings.DATABASE_URL}")
+    try:
+        from asgiref.sync import sync_to_async
+
+        categories_created, produce_created = await sync_to_async(ensure_reference_data)()
+        logger.info(
+            "Reference data ready: %s categories created, %s produce types created",
+            categories_created,
+            produce_created,
+        )
+    except Exception as exc:
+        logger.warning("Reference data bootstrap skipped or failed: %s", exc)
 
 
 # Shutdown event
