@@ -31,20 +31,33 @@ app = FastAPI(
     openapi_url="/api/openapi.json" if settings.DEBUG else None,
 )
 
+cors_origins = [
+    "http://localhost:3000",
+    "http://127.0.0.1:3000",
+    "http://localhost:8000",
+    "http://127.0.0.1:8000",
+    "http://localhost:8001",
+    "http://127.0.0.1:8001",
+    "http://localhost:5173",
+    "http://127.0.0.1:5173",
+    "https://villagetomarket.vercel.app",
+]
+
+if isinstance(settings.CORS_ALLOWED_ORIGINS, list):
+    cors_origins.extend(settings.CORS_ALLOWED_ORIGINS)
+elif isinstance(settings.CORS_ALLOWED_ORIGINS, str):
+    cors_origins.append(settings.CORS_ALLOWED_ORIGINS)
+
+cors_origins = list(set([o.strip().rstrip('/') for o in cors_origins]))
+
+if "*" in cors_origins:
+    cors_origins = ["*"]
+
 # CORS middleware
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=[
-        "http://localhost:3000",
-        "http://127.0.0.1:3000",
-        "http://localhost:8000",
-        "http://127.0.0.1:8000",
-        "http://localhost:8001",
-        "http://127.0.0.1:8001",
-        "http://localhost:5173",  # Vite default
-        "http://127.0.0.1:5173",
-    ] if settings.DEBUG else settings.CORS_ALLOWED_ORIGINS,
-    allow_credentials=True,
+    allow_origins=cors_origins,
+    allow_credentials=True if "*" not in cors_origins else False,
     allow_methods=["*"],
     allow_headers=["*"],
     expose_headers=["X-Total-Count", "X-Request-ID"],

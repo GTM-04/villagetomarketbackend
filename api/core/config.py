@@ -36,12 +36,7 @@ class Settings(BaseSettings):
     REFRESH_TOKEN_EXPIRE_MINUTES: int = 60 * 24 * 30  # 30 days
     
     # CORS
-    ALLOWED_HOSTS: Union[str, List[str]] = [
-        "http://localhost:3000",
-        "http://127.0.0.1:3000",
-        "http://localhost:8001",
-        "http://127.0.0.1:8001",
-    ]  # Update for production
+    ALLOWED_HOSTS: Union[str, List[str]] = ["*"]
     
     CORS_ALLOWED_ORIGINS: Union[str, List[str]] = [
         "https://villagetomarket.vercel.app",
