@@ -20,7 +20,30 @@ SECRET_KEY = os.getenv('SECRET_KEY', 'django-insecure-change-me-in-production')
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = os.getenv('DEBUG', 'False') == 'True'
 
-ALLOWED_HOSTS = os.getenv('ALLOWED_HOSTS', 'localhost,127.0.0.1').split(',')
+from urllib.parse import urlparse
+
+
+def _normalize_hosts(env_value: str):
+    """Normalize comma-separated hosts by removing scheme and trailing slashes.
+    Accepts values like 'https://example.com/' or 'example.com' and returns ['example.com'].
+    """
+    raw = [h.strip() for h in env_value.split(',') if h.strip()]
+    normalized = []
+    for h in raw:
+        try:
+            parsed = urlparse(h)
+            if parsed.netloc:
+                normalized.append(parsed.netloc)
+                continue
+        except Exception:
+            pass
+        # Fallback: strip scheme prefixes and trailing slash
+        h2 = h.replace('https://', '').replace('http://', '').rstrip('/')
+        normalized.append(h2)
+    return normalized
+
+
+ALLOWED_HOSTS = _normalize_hosts(os.getenv('ALLOWED_HOSTS', 'localhost,127.0.0.1'))
 
 # Application definition
 INSTALLED_APPS = [

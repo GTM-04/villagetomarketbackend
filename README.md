@@ -98,10 +98,10 @@ docker-compose logs -f web
 
 ## API Documentation
 
-- Django Admin: http://localhost:8000/admin/
-- FastAPI Docs: http://localhost:8001/docs
-- FastAPI ReDoc: http://localhost:8001/redoc
-- Flower (Celery): http://localhost:5555
+- Django Admin: <http://localhost:8000/admin/>
+- FastAPI Docs: <http://localhost:8001/docs>
+- FastAPI ReDoc: <http://localhost:8001/redoc>
+- Flower (Celery): <http://localhost:5555>
 
 ## Testing
 
@@ -170,12 +170,14 @@ python manage.py collectstatic
 ## API Endpoints
 
 ### Authentication
+
 - `POST /api/v1/auth/register` - Register new user
 - `POST /api/v1/auth/login` - Login
 - `POST /api/v1/auth/refresh` - Refresh token
 - `GET /api/v1/auth/me` - Get current user
 
 ### Listings
+
 - `GET /api/v1/listings` - List all listings
 - `POST /api/v1/listings` - Create listing
 - `GET /api/v1/listings/{id}` - Get listing detail
@@ -183,15 +185,18 @@ python manage.py collectstatic
 - `DELETE /api/v1/listings/{id}` - Delete listing
 
 ### Messaging
+
 - `GET /api/v1/messaging/conversations` - Get conversations
 - `POST /api/v1/messaging/conversations` - Start conversation
 - `WS /api/v1/messaging/ws/{conversation_id}` - WebSocket connection
 
 ### Pricing
+
 - `GET /api/v1/pricing/market-prices` - Get market prices
 - `GET /api/v1/pricing/trends/{produce_type_id}` - Get price trends
 
 ### Sync
+
 - `POST /api/v1/sync/batch` - Batch sync operations
 - `GET /api/v1/sync/status` - Get sync status
 
@@ -205,4 +210,4 @@ Proprietary - All rights reserved
 
 ## Support
 
-For support, email support@villagetomarket.zw
+For support, email <support@villagetomarket.zw>
