@@ -2,7 +2,7 @@
 Listing endpoints - CRUD operations for produce listings.
 """
 
-from fastapi import APIRouter, Depends, HTTPException, status, Query, UploadFile, File, Form
+from fastapi import APIRouter, Depends, HTTPException, Request, status, Query, UploadFile, File, Form
 from pydantic import BaseModel, Field
 from typing import Optional, List
 from datetime import date
@@ -21,6 +21,29 @@ from api.core.security import get_current_user, get_current_active_farmer
 from django.db.models import Q
 
 router = APIRouter()
+
+
+def build_absolute_image_url(request: Request, image_field) -> Optional[str]:
+    """
+    Return a fully-qualified URL for a Django ImageField / FileField.
+
+    - Cloudinary / S3 storage: image_field.url already contains an absolute
+      https://res.cloudinary.com/... (or s3 CDN) URL → return as-is.
+    - Local filesystem / Railway volume: image_field.url is a relative path
+      like /media/listings/2025/05/abc.jpg → prepend the request base URL so
+      the browser can always fetch it.
+    """
+    if not image_field:
+        return None
+    try:
+        raw_url = image_field.url          # relative or absolute
+        if raw_url.startswith('http://') or raw_url.startswith('https://'):
+            return raw_url                 # already absolute (Cloudinary / S3)
+        # Relative path — build absolute using request base URL
+        base = str(request.base_url).rstrip('/')
+        return f"{base}{raw_url if raw_url.startswith('/') else '/' + raw_url}"
+    except Exception:
+        return None
 
 
 # Pydantic models
@@ -108,6 +131,7 @@ class CreateListingRequest(BaseModel):
 
 @router.get("/", response_model=List[ListingResponse])
 async def list_listings(
+    request: Request,
     district: Optional[str] = None,
     produce_type: Optional[int] = None,
     q: Optional[str] = None,
@@ -182,7 +206,7 @@ async def list_listings(
                 "images": [
                     {
                         "id": str(img.id),
-                        "url": img.image.url,
+                        "url": build_absolute_image_url(request, img.image),
                         "caption": img.caption,
                         "is_primary": img.is_primary,
                         "order": img.order,
@@ -194,7 +218,7 @@ async def list_listings(
                     "name": listing.farmer.full_name,
                     "district": listing.farmer.district,
                     "is_verified": listing.farmer.is_verified,
-                    "profile_picture": listing.farmer.profile_picture.url if listing.farmer.profile_picture else None,
+                    "profile_picture": build_absolute_image_url(request, listing.farmer.profile_picture),
                 },
             }
             for listing in listings
@@ -205,6 +229,7 @@ async def list_listings(
 
 @router.get("/my-listings", response_model=List[ListingResponse])
 async def my_listings(
+    request: Request,
     status: Optional[str] = None,
     page: int = Query(1, ge=1),
     page_size: int = Query(20, ge=1, le=100),
@@ -266,7 +291,7 @@ async def my_listings(
                 "images": [
                     {
                         "id": str(img.id),
-                        "url": img.image.url,
+                        "url": build_absolute_image_url(request, img.image),
                         "caption": img.caption,
                         "is_primary": img.is_primary,
                         "order": img.order,
@@ -278,7 +303,7 @@ async def my_listings(
                     "name": listing.farmer.full_name,
                     "district": listing.farmer.district,
                     "is_verified": listing.farmer.is_verified,
-                    "profile_picture": listing.farmer.profile_picture.url if listing.farmer.profile_picture else None,
+                    "profile_picture": build_absolute_image_url(request, listing.farmer.profile_picture),
                 },
             }
             for listing in listings
@@ -396,7 +421,7 @@ async def create_listing(
 
 
 @router.get("/{listing_id}", response_model=ListingResponse)
-async def get_listing(listing_id: str):
+async def get_listing(listing_id: str, request: Request):
     """
     Get a specific listing by ID — full detail view.
     """
@@ -420,12 +445,7 @@ async def get_listing(listing_id: str):
             Listing.objects.filter(id=listing_id).update(view_count=listing.view_count + 1)
 
             farmer = listing.farmer
-            farmer_picture = None
-            if farmer.profile_picture:
-                try:
-                    farmer_picture = farmer.profile_picture.url
-                except Exception:
-                    farmer_picture = None
+            farmer_picture = build_absolute_image_url(request, farmer.profile_picture)
 
             return {
                 "id": str(listing.id),
@@ -466,7 +486,7 @@ async def get_listing(listing_id: str):
                 "images": [
                     {
                         "id": str(img.id),
-                        "url": img.image.url,
+                        "url": build_absolute_image_url(request, img.image),
                         "caption": img.caption,
                         "is_primary": img.is_primary,
                         "order": img.order,
@@ -498,6 +518,7 @@ async def get_listing(listing_id: str):
 
 @router.patch("/{listing_id}", response_model=ListingResponse)
 async def update_listing(
+    request: Request,
     listing_id: str,
     data: UpdateListingRequest,
     current_user: User = Depends(get_current_active_farmer)
@@ -594,12 +615,7 @@ async def update_listing(
             listing.save(update_fields=update_fields)
 
         farmer = listing.farmer
-        farmer_picture = None
-        if farmer.profile_picture:
-            try:
-                farmer_picture = farmer.profile_picture.url
-            except Exception:
-                farmer_picture = None
+        farmer_picture = build_absolute_image_url(request, farmer.profile_picture)
 
         return {
             "id": str(listing.id),
@@ -640,7 +656,7 @@ async def update_listing(
             "images": [
                 {
                     "id": str(img.id),
-                    "url": img.image.url,
+                    "url": build_absolute_image_url(request, img.image),
                     "caption": img.caption,
                     "is_primary": img.is_primary,
                     "order": img.order,
@@ -688,6 +704,7 @@ async def delete_listing(
 
 @router.post("/{listing_id}/images/", status_code=status.HTTP_201_CREATED)
 async def upload_listing_image(
+    request: Request,
     listing_id: str,
     image: Optional[UploadFile] = File(None),
     caption: str = Form(""),
@@ -726,9 +743,17 @@ async def upload_listing_image(
             caption=caption,
         )
         img.image.save(image.filename, ContentFile(contents), save=True)
+        # Return the raw url — caller (build_absolute_image_url) will make it absolute.
+        # We resolve it here directly since we have access to `request`.
+        raw_url = img.image.url
+        if raw_url.startswith('http://') or raw_url.startswith('https://'):
+            absolute_url = raw_url          # Cloudinary / S3 CDN
+        else:
+            base = str(request.base_url).rstrip('/')
+            absolute_url = f"{base}{raw_url if raw_url.startswith('/') else '/' + raw_url}"
         return {
             "id": str(img.id),
-            "url": img.image.url,
+            "url": absolute_url,
             "caption": img.caption,
             "is_primary": img.is_primary,
         }

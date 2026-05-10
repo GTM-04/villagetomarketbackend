@@ -46,11 +46,15 @@ EMAIL_USE_TLS = True
 # We use Cloudinary (free tier) so uploaded images persist permanently.
 # Set CLOUDINARY_URL in Railway env vars:  cloudinary://api_key:api_secret@cloud_name
 if os.getenv('CLOUDINARY_URL'):
-    import cloudinary
-    cloudinary.config(cloudinary_url=os.getenv('CLOUDINARY_URL'))
-    DEFAULT_FILE_STORAGE = 'cloudinary_storage.storage.MediaCloudinaryStorage'
-    # Cloudinary returns absolute CDN URLs, so MEDIA_URL can be left as-is.
-    MEDIA_URL = '/media/'   # kept for compatibility; not used for serving
+    try:
+        import cloudinary  # noqa: PLC0415 — conditional import, installed in venv
+        cloudinary.config(cloudinary_url=os.getenv('CLOUDINARY_URL'))
+    except ImportError:
+        pass   # cloudinary not installed — fall through to filesystem storage
+    else:
+        DEFAULT_FILE_STORAGE = 'cloudinary_storage.storage.MediaCloudinaryStorage'
+        # Cloudinary returns absolute CDN URLs, so MEDIA_URL can be left as-is.
+        MEDIA_URL = '/media/'   # kept for compatibility; not used for serving
 
 elif os.getenv('AWS_ACCESS_KEY_ID'):
     # Fallback: S3-compatible storage (existing config)
@@ -63,6 +67,15 @@ elif os.getenv('AWS_ACCESS_KEY_ID'):
     AWS_S3_FILE_OVERWRITE = False
     AWS_DEFAULT_ACL = None
 # else: local filesystem (ephemeral on Railway — images lost on redeploy)
+
+# ── Railway Persistent Volume fallback ────────────────────────────────────────
+# When Cloudinary is NOT set but RAILWAY_VOLUME_MOUNT_PATH is (e.g. /data),
+# store media on the volume so files survive redeploys.
+# Dashboard: Add Volume → Mount path /data, then set RAILWAY_VOLUME_MOUNT_PATH=/data
+_volume = os.environ.get('RAILWAY_VOLUME_MOUNT_PATH', '')
+if _volume and not os.getenv('CLOUDINARY_URL') and not os.getenv('AWS_ACCESS_KEY_ID'):
+    MEDIA_ROOT = os.path.join(_volume, 'media')
+    MEDIA_URL = '/media/'
 
 # Sentry error tracking
 if os.getenv('SENTRY_DSN'):

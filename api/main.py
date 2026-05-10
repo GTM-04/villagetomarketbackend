@@ -151,12 +151,21 @@ async def root():
 app.include_router(api_router, prefix="/api/v1")
 
 # ── Serve uploaded media files (/media/*) ──────────────────────────────────
-# Django saves uploads to MEDIA_ROOT (BASE_DIR/media). FastAPI has no route
-# for /media/ by default, causing 404s on every image request. We mount the
-# directory here so the same process that accepts uploads also serves them.
-_media_dir = Path(__file__).resolve().parent.parent / "media"
+# Use Django's MEDIA_ROOT so we respect the Railway volume mount path
+# (RAILWAY_VOLUME_MOUNT_PATH=/data → MEDIA_ROOT=/data/media) as well as the
+# Cloudinary case.  When Cloudinary is active the images are served directly
+# from the CDN so we still mount the local dir as a harmless fallback.
+try:
+    import django
+    from django.conf import settings as _dj_settings
+    _media_dir = Path(_dj_settings.MEDIA_ROOT)
+except Exception:
+    _media_dir = Path(__file__).resolve().parent.parent / "media"
 _media_dir.mkdir(parents=True, exist_ok=True)   # ensure dir exists on fresh deploy
-app.mount("/media", StaticFiles(directory=str(_media_dir)), name="media")
+try:
+    app.mount("/media", StaticFiles(directory=str(_media_dir)), name="media")
+except Exception as _e:
+    logger.warning("Could not mount /media static dir: %s", _e)
 
 
 # Startup event
