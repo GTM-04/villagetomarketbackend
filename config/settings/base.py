@@ -62,6 +62,8 @@ INSTALLED_APPS = [
     'channels',
     'django_celery_beat',
     'django_celery_results',
+    'cloudinary',
+    'cloudinary_storage',
     
     # Local apps
     'apps.core',

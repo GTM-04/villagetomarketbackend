@@ -41,11 +41,19 @@ EMAIL_HOST_USER = os.getenv('EMAIL_HOST_USER', '')
 EMAIL_HOST_PASSWORD = os.getenv('EMAIL_HOST_PASSWORD', '')
 EMAIL_USE_TLS = True
 
-# Static files - Use WhiteNoise or S3
-STATICFILES_STORAGE = 'django.contrib.staticfiles.storage.ManifestStaticFilesStorage'
+# ── Media / File Storage ──────────────────────────────────────────────────────
+# Railway has an ephemeral filesystem — files are wiped on every redeploy.
+# We use Cloudinary (free tier) so uploaded images persist permanently.
+# Set CLOUDINARY_URL in Railway env vars:  cloudinary://api_key:api_secret@cloud_name
+if os.getenv('CLOUDINARY_URL'):
+    import cloudinary
+    cloudinary.config(cloudinary_url=os.getenv('CLOUDINARY_URL'))
+    DEFAULT_FILE_STORAGE = 'cloudinary_storage.storage.MediaCloudinaryStorage'
+    # Cloudinary returns absolute CDN URLs, so MEDIA_URL can be left as-is.
+    MEDIA_URL = '/media/'   # kept for compatibility; not used for serving
 
-# Media files - Use S3 or similar
-if os.getenv('AWS_ACCESS_KEY_ID'):
+elif os.getenv('AWS_ACCESS_KEY_ID'):
+    # Fallback: S3-compatible storage (existing config)
     DEFAULT_FILE_STORAGE = 'storages.backends.s3boto3.S3Boto3Storage'
     AWS_ACCESS_KEY_ID = os.getenv('AWS_ACCESS_KEY_ID')
     AWS_SECRET_ACCESS_KEY = os.getenv('AWS_SECRET_ACCESS_KEY')
@@ -54,6 +62,7 @@ if os.getenv('AWS_ACCESS_KEY_ID'):
     AWS_S3_CUSTOM_DOMAIN = f'{AWS_STORAGE_BUCKET_NAME}.s3.amazonaws.com'
     AWS_S3_FILE_OVERWRITE = False
     AWS_DEFAULT_ACL = None
+# else: local filesystem (ephemeral on Railway — images lost on redeploy)
 
 # Sentry error tracking
 if os.getenv('SENTRY_DSN'):

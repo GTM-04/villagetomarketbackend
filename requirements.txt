@@ -37,6 +37,8 @@ django-celery-results>=2.5,<3
 pillow==10.2.0
 python-magic==0.4.27
 boto3==1.34.51
+cloudinary==1.39.0
+django-cloudinary-storage==0.3.0
 
 # Geospatial
 geopy==2.4.1
