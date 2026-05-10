@@ -43,7 +43,7 @@ class CreateConversationRequest(BaseModel):
     initial_message: Optional[str] = None
 
 
-@router.post("/conversations", response_model=ConversationResponse, status_code=status.HTTP_201_CREATED)
+@router.post("/conversations/", response_model=ConversationResponse, status_code=status.HTTP_201_CREATED)
 async def create_or_get_conversation(
     data: CreateConversationRequest,
     current_user: User = Depends(get_current_user),
@@ -127,7 +127,7 @@ async def create_or_get_conversation(
     return data_out
 
 
-@router.get("/conversations/{conversation_id}", response_model=ConversationResponse)
+@router.get("/conversations/{conversation_id}/", response_model=ConversationResponse)
 async def get_conversation(
     conversation_id: str,
     current_user: User = Depends(get_current_user),
@@ -168,7 +168,7 @@ async def get_conversation(
     return result
 
 
-@router.get("/conversations", response_model=List[ConversationResponse])
+@router.get("/conversations/", response_model=List[ConversationResponse])
 async def list_conversations(current_user: User = Depends(get_current_user)):
     """
     List user's conversations.

@@ -69,11 +69,16 @@ async def http_router(scope, receive, send):
     """Route HTTP requests between Django and FastAPI based on path."""
     if scope["type"] == "http":
         path = scope.get("path", "")
-        # Route /api/* to FastAPI (handles /api/docs, /api/v1/*, etc.)
-        if path.startswith("/api/"):
+        # Route /api/* and /media/* to FastAPI
+        # - /api/*   → FastAPI handles all REST endpoints
+        # - /media/* → FastAPI has a StaticFiles mount that serves from
+        #              Django's MEDIA_ROOT (supports Railway volumes and
+        #              local dev).  Django only serves media when DEBUG=True,
+        #              so we must route through FastAPI for production.
+        if path.startswith("/api/") or path.startswith("/media/"):
             await fastapi_app(scope, receive, send)
         else:
-            # All other paths go to Django
+            # All other paths go to Django (admin, health, etc.)
             await django_asgi_app(scope, receive, send)
     else:
         # Non-HTTP requests go to Django
