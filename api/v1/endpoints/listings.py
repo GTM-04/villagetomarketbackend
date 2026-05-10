@@ -3,7 +3,7 @@ Listing endpoints - CRUD operations for produce listings.
 """
 
 from fastapi import APIRouter, Depends, HTTPException, Request, status, Query, UploadFile, File, Form
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, validator
 from typing import Optional, List
 from datetime import date
 from asgiref.sync import sync_to_async
@@ -124,7 +124,7 @@ class CreateListingRequest(BaseModel):
     quantity_available: float = Field(..., gt=0)
     unit: str
     price_per_unit: float = Field(..., gt=0)
-    description: str
+    description: str = ""
     is_organic: bool = False
     harvest_date: Optional[date] = None
     available_from: Optional[date] = None
@@ -137,6 +137,20 @@ class CreateListingRequest(BaseModel):
     deliveryAvailable: bool = False
     produceName: Optional[str] = None
     categoryName: Optional[str] = None
+
+    @validator('harvest_date', 'available_from', 'available_until', pre=True)
+    def empty_string_to_none(cls, v):
+        """Convert empty strings to None so Pydantic doesn't reject them as invalid dates."""
+        if isinstance(v, str) and v.strip() == '':
+            return None
+        return v
+
+    @validator('description', pre=True)
+    def default_empty_description(cls, v):
+        """Allow null/empty description without failing validation."""
+        if v is None:
+            return ''
+        return v
 
     def resolved_district(self) -> str:
         """Return the district from whichever field was supplied."""
