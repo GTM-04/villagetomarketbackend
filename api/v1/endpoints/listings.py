@@ -20,7 +20,7 @@ from apps.users.models import User
 from api.core.security import get_current_user, get_current_active_farmer
 from django.db.models import Q
 
-router = APIRouter()
+router = APIRouter(redirect_slashes=False)
 
 
 def build_absolute_image_url(request: Request, image_field) -> Optional[str]:

@@ -17,7 +17,7 @@ from apps.messaging.models import Conversation, Message
 from apps.users.models import User
 from api.core.security import get_current_user
 
-router = APIRouter()
+router = APIRouter(redirect_slashes=False)
 
 
 # Pydantic models
