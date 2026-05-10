@@ -7,9 +7,12 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.middleware.trustedhost import TrustedHostMiddleware
 from fastapi.responses import JSONResponse
 from fastapi.exceptions import RequestValidationError
+from fastapi.staticfiles import StaticFiles
 from starlette.exceptions import HTTPException as StarletteHTTPException
 import logging
 import time
+import os
+from pathlib import Path
 
 from api.v1.router import api_router
 from api.core.config import settings
@@ -146,6 +149,14 @@ async def root():
 
 # Include API routers
 app.include_router(api_router, prefix="/api/v1")
+
+# ── Serve uploaded media files (/media/*) ──────────────────────────────────
+# Django saves uploads to MEDIA_ROOT (BASE_DIR/media). FastAPI has no route
+# for /media/ by default, causing 404s on every image request. We mount the
+# directory here so the same process that accepts uploads also serves them.
+_media_dir = Path(__file__).resolve().parent.parent / "media"
+_media_dir.mkdir(parents=True, exist_ok=True)   # ensure dir exists on fresh deploy
+app.mount("/media", StaticFiles(directory=str(_media_dir)), name="media")
 
 
 # Startup event
