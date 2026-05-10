@@ -28,10 +28,16 @@ def build_absolute_image_url(request: Request, image_field) -> Optional[str]:
     Return a fully-qualified URL for a Django ImageField / FileField.
 
     - Cloudinary / S3 storage: image_field.url already contains an absolute
-      https://res.cloudinary.com/... (or s3 CDN) URL → return as-is.
+      https://res.cloudinary.com/... URL -> return as-is.
     - Local filesystem / Railway volume: image_field.url is a relative path
-      like /media/listings/2025/05/abc.jpg → prepend the request base URL so
-      the browser can always fetch it.
+      like /media/listings/2025/05/abc.jpg -> prepend the correct absolute base.
+
+    IMPORTANT - Railway TLS termination:
+    Railway terminates HTTPS at its load balancer and forwards internally via
+    plain HTTP, so request.base_url always returns 'http://...'.  We check the
+    X-Forwarded-Proto header Railway injects to detect the real client scheme
+    and rewrite http:// -> https:// when needed.  This is the same fix that
+    Django applies via SECURE_PROXY_SSL_HEADER.
     """
     if not image_field:
         return None
@@ -39,8 +45,16 @@ def build_absolute_image_url(request: Request, image_field) -> Optional[str]:
         raw_url = image_field.url          # relative or absolute
         if raw_url.startswith('http://') or raw_url.startswith('https://'):
             return raw_url                 # already absolute (Cloudinary / S3)
-        # Relative path — build absolute using request base URL
+
+        # Relative path - build absolute URL using the request origin
         base = str(request.base_url).rstrip('/')
+
+        # Fix scheme: Railway/Nginx terminate TLS externally and forward
+        # internally as HTTP.  X-Forwarded-Proto holds the real client scheme.
+        forwarded_proto = request.headers.get('x-forwarded-proto', '').strip()
+        if forwarded_proto == 'https' and base.startswith('http://'):
+            base = 'https://' + base[len('http://'):]
+
         return f"{base}{raw_url if raw_url.startswith('/') else '/' + raw_url}"
     except Exception:
         return None
@@ -743,14 +757,8 @@ async def upload_listing_image(
             caption=caption,
         )
         img.image.save(image.filename, ContentFile(contents), save=True)
-        # Return the raw url — caller (build_absolute_image_url) will make it absolute.
-        # We resolve it here directly since we have access to `request`.
-        raw_url = img.image.url
-        if raw_url.startswith('http://') or raw_url.startswith('https://'):
-            absolute_url = raw_url          # Cloudinary / S3 CDN
-        else:
-            base = str(request.base_url).rstrip('/')
-            absolute_url = f"{base}{raw_url if raw_url.startswith('/') else '/' + raw_url}"
+        # Delegate to the shared helper so X-Forwarded-Proto is handled correctly.
+        absolute_url = build_absolute_image_url(request, img.image)
         return {
             "id": str(img.id),
             "url": absolute_url,
