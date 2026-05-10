@@ -18,7 +18,7 @@ from channels.security.websocket import AllowedHostsOriginValidator
 os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'config.settings.development')
 
 # Initialize Django ASGI application early to ensure the AppRegistry
-# is populated before importing code that may import ORM models.
+# is populated before importing code that may import ORM model.
 django_asgi_app = get_asgi_application()
 
 # Safe to import Django auth models only AFTER get_asgi_application()
