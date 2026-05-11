@@ -34,14 +34,16 @@ from apps.messaging.routing import websocket_urlpatterns
 @database_sync_to_async
 def _get_user_from_jwt(token: str):
     """Decode a JWT access token and return the corresponding User or AnonymousUser."""
-    from rest_framework_simplejwt.tokens import AccessToken
-    from rest_framework_simplejwt.exceptions import TokenError, InvalidToken
     from apps.users.models import User
+    from api.core.security import decode_token
+    from fastapi import HTTPException
     try:
-        validated = AccessToken(token)
-        user_id = validated.get('user_id') or validated.get('sub')
+        payload = decode_token(token)
+        user_id = payload.get('sub')
+        if not user_id:
+            return AnonymousUser()
         return User.objects.get(id=user_id)
-    except (TokenError, InvalidToken, User.DoesNotExist, Exception):
+    except (HTTPException, User.DoesNotExist, Exception):
         return AnonymousUser()
 
 
