@@ -6,7 +6,7 @@ from fastapi import APIRouter, Depends, UploadFile, File, HTTPException, status,
 from pydantic import BaseModel, Field
 from typing import List, Optional
 from datetime import date
-from asgiref.sync import sync_to_async
+from channels.db import database_sync_to_async as sync_to_async
 import io
 import os
 import django

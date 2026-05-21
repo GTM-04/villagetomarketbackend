@@ -91,7 +91,7 @@ async def get_current_user(
             headers={"WWW-Authenticate": "Bearer"},
         )
     
-    from asgiref.sync import sync_to_async
+    from channels.db import database_sync_to_async as sync_to_async
     try:
         user = await sync_to_async(User.objects.get)(id=user_id)
     except User.DoesNotExist:

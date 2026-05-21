@@ -6,7 +6,7 @@ from fastapi import APIRouter, Depends, HTTPException, Request, status, Query, U
 from pydantic import BaseModel, Field, validator
 from typing import Optional, List
 from datetime import date
-from asgiref.sync import sync_to_async
+from channels.db import database_sync_to_async as sync_to_async
 import os
 import django
 

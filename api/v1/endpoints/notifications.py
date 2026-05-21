@@ -5,7 +5,7 @@ Notification endpoints.
 from fastapi import APIRouter, Depends
 from pydantic import BaseModel
 from typing import List
-from asgiref.sync import sync_to_async
+from channels.db import database_sync_to_async as sync_to_async
 import os
 import django
 

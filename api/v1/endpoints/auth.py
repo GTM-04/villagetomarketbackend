@@ -5,7 +5,7 @@ Authentication endpoints - Register, login, refresh token.
 from fastapi import APIRouter, HTTPException, status, Depends
 from pydantic import BaseModel, EmailStr, Field
 from typing import Optional
-from asgiref.sync import sync_to_async
+from channels.db import database_sync_to_async as sync_to_async
 import os
 import django
 

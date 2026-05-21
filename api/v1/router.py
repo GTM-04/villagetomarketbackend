@@ -4,7 +4,7 @@ Main API router - combines all endpoint routers.
 
 from typing import List
 from fastapi import APIRouter
-from asgiref.sync import sync_to_async
+from channels.db import database_sync_to_async as sync_to_async
 
 from api.v1.endpoints import (
     auth,

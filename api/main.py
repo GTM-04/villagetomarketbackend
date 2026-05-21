@@ -176,7 +176,7 @@ async def startup_event():
     logger.info(f"Environment: {'Development' if settings.DEBUG else 'Production'}")
     logger.info(f"Database: {settings.DATABASE_URL}")
     try:
-        from asgiref.sync import sync_to_async
+        from channels.db import database_sync_to_async as sync_to_async
 
         categories_created, produce_created = await sync_to_async(ensure_reference_data)()
         logger.info(
