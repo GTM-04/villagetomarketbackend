@@ -95,3 +95,6 @@ django-redis==5.4.0
 # ASGI Server
 gunicorn==21.2.0
 daphne==4.1.0
+
+# Payments
+paynow==1.0.6
