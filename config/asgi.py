@@ -89,11 +89,9 @@ async def http_router(scope, receive, send):
 
 application = ProtocolTypeRouter({
     "http": http_router,
-    "websocket": AllowedHostsOriginValidator(
-        JWTAuthMiddleware(
-            URLRouter(
-                websocket_urlpatterns
-            )
+    "websocket": JWTAuthMiddleware(
+        URLRouter(
+            websocket_urlpatterns
         )
     ),
 })
