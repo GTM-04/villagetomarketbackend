@@ -269,8 +269,8 @@ python manage.py createsuperuser
 ### 4. Run Development Server
 
 ```bash
-# Start Django server
-python manage.py runserver
+# Start combined Django + FastAPI ASGI server
+daphne -b 0.0.0.0 -p 8000 config.asgi:application
 
 # Visit: http://localhost:8000/admin/
 # Health check: http://localhost:8000/health/

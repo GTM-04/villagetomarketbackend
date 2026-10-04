@@ -23,23 +23,19 @@ chmod +x setup.sh
 ./setup.sh
 
 # 3. Start all services
-# Terminal 1: Django
+# Terminal 1: Combined Django + FastAPI ASGI server
 source venv/bin/activate
-python manage.py runserver
+daphne -b 0.0.0.0 -p 8000 config.asgi:application
 
-# Terminal 2: FastAPI
-source venv/bin/activate
-uvicorn api.main:app --reload --port 8001
-
-# Terminal 3: Celery Worker
+# Terminal 2: Celery Worker
 source venv/bin/activate
 celery -A config worker -l info
 
-# Terminal 4: Celery Beat (optional)
+# Terminal 3: Celery Beat (optional)
 source venv/bin/activate
 celery -A config beat -l info
 
-# Terminal 5: Redis (if not auto-starting)
+# Terminal 4: Redis (if not auto-starting)
 redis-server
 ```
 

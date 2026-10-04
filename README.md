@@ -63,15 +63,8 @@ python scripts/seed_data.py
 ### 6. Run Development Servers
 
 ```bash
-# Django development server
-
+# Combined Django + FastAPI development server
 daphne -b 0.0.0.0 -p 8000 config.asgi:application
-
-
-python manage.py runserver
-
-# FastAPI server (in another terminal)
-uvicorn api.main:app --reload --port 8001
 
 # Celery worker (in another terminal)
 celery -A config worker -l info

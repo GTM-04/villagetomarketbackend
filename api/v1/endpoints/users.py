@@ -171,3 +171,49 @@ async def switch_mode(
         "user_type": current_user.user_type,
         "message": f"Switched to {data.mode} mode",
     }
+
+
+class PublicFarmerProfile(BaseModel):
+    id: str
+    username: str
+    full_name: str
+    district: str
+    profile_picture: Optional[str]
+    bio: Optional[str]
+    farm_name: str
+    farm_size: Optional[str]
+    is_verified: bool
+
+@router.get("/farmer/{username}", response_model=PublicFarmerProfile)
+async def get_public_farmer_profile(username: str):
+    """
+    Get a farmer's public profile by username or phone number.
+    """
+    from django.db.models import Q
+    @sync_to_async
+    def fetch_farmer():
+        try:
+            # allow fetching by username or phone_number
+            user = User.objects.select_related('farmer_profile').get(
+                Q(username=username) | Q(phone_number=username), 
+                user_type='farmer'
+            )
+            profile = user.farmer_profile
+            return {
+                "id": str(user.id),
+                "username": user.username,
+                "full_name": user.full_name,
+                "district": getattr(user, 'district', ''),
+                "profile_picture": user.profile_picture.url if user.profile_picture else None,
+                "bio": getattr(user, 'bio', ''),
+                "farm_name": getattr(profile, 'farm_name', ''),
+                "farm_size": str(profile.farm_size) if getattr(profile, 'farm_size', None) else None,
+                "is_verified": getattr(user, 'is_verified', False)
+            }
+        except User.DoesNotExist:
+            return None
+            
+    data = await fetch_farmer()
+    if not data:
+        raise HTTPException(status_code=404, detail="Farmer not found")
+    return data

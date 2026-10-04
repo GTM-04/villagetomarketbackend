@@ -57,7 +57,15 @@ cors_origins = list(set([o.strip().rstrip('/') for o in cors_origins]))
 if "*" in cors_origins:
     cors_origins = ["*"]
 
-# CORS middleware
+# Trusted hosts middleware
+if not settings.DEBUG:
+    app.add_middleware(
+        TrustedHostMiddleware,
+        allowed_hosts=settings.ALLOWED_HOSTS
+    )
+
+# CORS middleware MUST be added last so it becomes the outermost layer.
+# This ensures it can attach CORS headers even if TrustedHostMiddleware rejects the request.
 app.add_middleware(
     CORSMiddleware,
     allow_origins=cors_origins,
@@ -66,13 +74,6 @@ app.add_middleware(
     allow_headers=["*"],
     expose_headers=["X-Total-Count", "X-Request-ID"],
 )
-
-# Trusted hosts middleware
-if not settings.DEBUG:
-    app.add_middleware(
-        TrustedHostMiddleware,
-        allowed_hosts=settings.ALLOWED_HOSTS
-    )
 
 
 # Request timing middleware
