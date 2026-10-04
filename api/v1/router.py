@@ -15,7 +15,6 @@ from api.v1.endpoints import (
     notifications,
     marketplace,
     offline_sync,
-    payments,
 )
 from apps.listings.reference_data import ensure_reference_data
 
@@ -30,8 +29,6 @@ api_router.include_router(pricing.router, prefix="/pricing", tags=["Pricing"])
 api_router.include_router(notifications.router, prefix="/notifications", tags=["Notifications"])
 api_router.include_router(marketplace.router, prefix="/marketplace", tags=["Marketplace"])
 api_router.include_router(offline_sync.router, prefix="/sync", tags=["Offline Sync"])
-api_router.include_router(payments.router, prefix="/payments", tags=["Payments"])
-
 
 # Top-level endpoints (commonly used across features)
 @api_router.get("/produce-types", response_model=List[dict], tags=["Reference Data"])
