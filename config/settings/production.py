@@ -118,4 +118,32 @@ LOGGING['root']['level'] = 'WARNING'
 LOGGING['loggers']['django']['level'] = 'WARNING'
 LOGGING['loggers']['apps']['level'] = 'INFO'
 
+# ── Channel Layers (WebSocket) ────────────────────────────────────────────────
+# Use Redis if REDIS_URL is set, otherwise fall back to in-memory
+# (in-memory works for a single-server Railway deployment)
+if os.getenv('REDIS_URL'):
+    CHANNEL_LAYERS = {
+        'default': {
+            'BACKEND': 'channels_redis.core.RedisChannelLayer',
+            'CONFIG': {
+                'hosts': [os.getenv('REDIS_URL')],
+            },
+        },
+    }
+else:
+    CHANNEL_LAYERS = {
+        'default': {
+            'BACKEND': 'channels.layers.InMemoryChannelLayer',
+        },
+    }
+
+# ── Cache ─────────────────────────────────────────────────────────────────────
+# Fall back to local memory cache when Redis is not available
+if not os.getenv('REDIS_URL'):
+    CACHES = {
+        'default': {
+            'BACKEND': 'django.core.cache.backends.locmem.LocMemCache',
+        }
+    }
+
 print("Running in PRODUCTION mode")
