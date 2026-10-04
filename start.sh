@@ -1,6 +1,8 @@
 #!/bin/bash
 set -e
 
+export DJANGO_SETTINGS_MODULE=config.settings.production
+
 echo "Running database migrations..."
 python manage.py migrate --noinput
 

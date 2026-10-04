@@ -8,11 +8,22 @@ import dj_database_url
 
 DEBUG = False
 
-# Use environment variable for allowed hosts
-ALLOWED_HOSTS = os.getenv('ALLOWED_HOSTS', '').split(',')
+# Use environment variable for allowed hosts, with sensible defaults for Railway
+_hosts_env = os.getenv('ALLOWED_HOSTS', '')
+ALLOWED_HOSTS = [h.strip() for h in _hosts_env.split(',') if h.strip()]
+# Always allow the Railway domain and health checks
+ALLOWED_HOSTS += [
+    'villagetomarketbackend-production.up.railway.app',
+    '.railway.app',
+    'localhost',
+    '127.0.0.1',
+]
+ALLOWED_HOSTS = list(set(ALLOWED_HOSTS))
 
-# Security settings
-SECURE_SSL_REDIRECT = True
+# Railway terminates SSL at their reverse proxy, so we must NOT redirect
+# internally — it causes an infinite redirect loop.  The SECURE_PROXY_SSL_HEADER
+# below tells Django to trust the X-Forwarded-Proto header from Railway's proxy.
+SECURE_SSL_REDIRECT = False
 SESSION_COOKIE_SECURE = True
 CSRF_COOKIE_SECURE = True
 SECURE_BROWSER_XSS_FILTER = True
